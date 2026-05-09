@@ -29,7 +29,13 @@ import {
 } from '../../../store/slices/sellerSlice';
 import { useTheme } from '../../../theme';
 import { formatCurrency, timeAgo } from '../../../utils/format';
+import { safeArray } from '../../../utils/safe';
 import type { ListingStatus } from '../types';
+
+const PLACEHOLDER_IMAGE =
+  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=70';
+
+const safeNum = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
 const TABS: Array<{ id: 'all' | ListingStatus; label: string }> = [
   { id: 'all', label: 'All' },
@@ -118,13 +124,13 @@ export const MyListingsScreen: React.FC = () => {
           >
             <View style={{ flex: 1 }}>
               <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)', letterSpacing: 1 }}>
-                {seller.plan.toUpperCase()} PLAN
+                {(seller.plan ?? 'free').toUpperCase()} PLAN
               </Text>
               <Text variant="h3" weight="800" style={{ color: '#fff', marginTop: 4 }}>
                 {used} / {total === 999 ? '∞' : total} listings used
               </Text>
               <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>
-                {seller.totalLeads} total leads received
+                {safeNum(seller.totalLeads)} total leads received
               </Text>
             </View>
             {seller.plan !== 'pro' && (
@@ -176,51 +182,60 @@ export const MyListingsScreen: React.FC = () => {
           data={filtered}
           keyExtractor={i => i.id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={9}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
           }
-          renderItem={({ item }) => (
+          renderItem={({ item }) => {
+            const images = safeArray(item.images);
+            const cover = images[0] || PLACEHOLDER_IMAGE;
+            const status = (item.status ?? 'live') as ListingStatus;
+            const locationLine = [item.locality, item.city].filter(Boolean).join(', ') || '—';
+            return (
             <Card padding={14} style={{ marginBottom: 14 }}>
               <View style={{ flexDirection: 'row' }}>
-                <Image source={{ uri: item.images[0] }} style={styles.image} />
+                <Image source={{ uri: cover }} style={styles.image} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text variant="bodyLg" weight="700" numberOfLines={1} style={{ flex: 1, marginRight: 8 }}>
-                      {item.title}
+                      {item.title ?? 'Untitled'}
                     </Text>
-                    <StatusBadge label={item.status} tone={statusTone(item.status)} />
+                    <StatusBadge label={status} tone={statusTone(status)} />
                   </View>
                   <Text variant="caption" color="textMuted" style={{ marginTop: 2 }} numberOfLines={1}>
-                    {item.locality}, {item.city}
+                    {locationLine}
                   </Text>
                   <Text variant="bodyLg" weight="700" style={{ color: theme.colors.primary, marginTop: 6 }}>
-                    {formatCurrency(item.priceMin)}
+                    {formatCurrency(safeNum(item.priceMin))}
                   </Text>
                 </View>
               </View>
               <View style={[styles.metricsRow, { borderTopColor: theme.colors.divider }]}>
-                <Metric icon="eye-outline" value={item.views} label="Views" />
+                <Metric icon="eye-outline" value={safeNum(item.views)} label="Views" />
                 <View style={[styles.metricDivider, { backgroundColor: theme.colors.divider }]} />
-                <Metric icon="document-text-outline" value={item.inquiries} label="Inquiries" />
+                <Metric icon="document-text-outline" value={safeNum(item.inquiries)} label="Inquiries" />
                 <View style={[styles.metricDivider, { backgroundColor: theme.colors.divider }]} />
-                <Metric icon="heart-outline" value={item.saves} label="Saves" />
+                <Metric icon="heart-outline" value={safeNum(item.saves)} label="Saves" />
               </View>
               <View style={styles.actionsRow}>
                 <Text variant="caption" color="textMuted" style={{ flex: 1 }}>
-                  Updated {timeAgo(item.updatedAt)}
+                  Updated {item.updatedAt ? timeAgo(item.updatedAt) : 'just now'}
                 </Text>
-                {item.status !== 'sold' && (
+                {status !== 'sold' && (
                   <Pressable
-                    onPress={() => onAction(item.id, item.status, item.status)}
+                    onPress={() => onAction(item.id, status, status)}
                     style={[styles.actionBtn, { backgroundColor: theme.colors.primary + '14' }]}
                   >
                     <Icon
-                      name={item.status === 'live' ? 'pause' : 'play'}
+                      name={status === 'live' ? 'pause' : 'play'}
                       size={14}
                       color={theme.colors.primary}
                     />
                     <Text variant="caption" weight="700" style={{ color: theme.colors.primary, marginLeft: 4 }}>
-                      {item.status === 'live' ? 'Pause' : 'Activate'}
+                      {status === 'live' ? 'Pause' : 'Activate'}
                     </Text>
                   </Pressable>
                 )}
@@ -232,7 +247,8 @@ export const MyListingsScreen: React.FC = () => {
                 </Pressable>
               </View>
             </Card>
-          )}
+            );
+          }}
           ListEmptyComponent={
             !loading ? (
               <EmptyState
@@ -259,11 +275,12 @@ export const MyListingsScreen: React.FC = () => {
 
 const Metric: React.FC<{ icon: string; value: number; label: string }> = ({ icon, value, label }) => {
   const theme = useTheme();
+  const safe = typeof value === 'number' && Number.isFinite(value) ? value : 0;
   return (
     <View style={styles.metric}>
       <Icon name={icon as any} size={14} color={theme.colors.primary} />
       <Text variant="caption" weight="700" style={{ marginTop: 2 }}>
-        {value.toLocaleString()}
+        {safe.toLocaleString('en-IN')}
       </Text>
       <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>
         {label}
