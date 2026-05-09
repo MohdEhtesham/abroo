@@ -53,7 +53,9 @@ const CustomTabBar: React.FC<BottomTabBarProps & { tabs: TabDef[] }> = ({
   const insets = useSafeAreaInsets();
   const inquiryCount = useAppSelector(s => s.inquiry.list.filter(i => i.status !== 'closed').length);
   const visitCount = useAppSelector(s => s.visit.list.filter(v => v.status === 'upcoming').length);
-  const newLeads = useAppSelector(s => s.seller.leads.filter(l => l.status === 'new').length);
+  const newLeads = useAppSelector(
+    s => s.seller.leads.filter(l => l.status === 'new' || l.status === 'visit_booked').length,
+  );
 
   return (
     <View

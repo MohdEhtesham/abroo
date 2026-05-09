@@ -37,6 +37,7 @@ export const SellerHomeScreen: React.FC = () => {
 
   const live = listings.filter(l => l.status === 'live').length;
   const newLeads = leads.filter(l => l.status === 'new').length;
+  const visitBookings = leads.filter(l => l.status === 'visit_booked').length;
   const recentLeads = leads.slice(0, 3);
   const seller = user?.seller;
 
@@ -111,6 +112,34 @@ export const SellerHomeScreen: React.FC = () => {
             </LinearGradient>
           </Pressable>
         </FadeSlideIn>
+
+        {visitBookings > 0 && (
+          <FadeSlideIn delay={260} style={{ paddingHorizontal: 20, marginTop: 14 }}>
+            <Pressable
+              onPress={() => navigation.navigate('Leads', { initialTab: 'visit_booked' })}
+              style={[
+                styles.visitTile,
+                {
+                  backgroundColor: theme.colors.success + '14',
+                  borderColor: theme.colors.success + '40',
+                },
+              ]}
+            >
+              <View style={[styles.visitIcon, { backgroundColor: theme.colors.success }]}>
+                <Icon name="calendar" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text weight="800" style={{ color: theme.colors.success }}>
+                  {visitBookings} site visit{visitBookings === 1 ? '' : 's'} booked
+                </Text>
+                <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+                  Buyers scheduled visits on your listings — tap to review
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color={theme.colors.success} />
+            </Pressable>
+          </FadeSlideIn>
+        )}
 
         <FadeSlideIn delay={300}>
         <SectionHeader
@@ -322,6 +351,20 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visitTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  visitIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -42,6 +42,8 @@ export const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { list, loading } = useAppSelector(s => s.notification);
+  const role = useAppSelector(s => s.auth.user?.role ?? 'consumer');
+  const isSeller = role === 'seller';
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -57,22 +59,32 @@ export const NotificationsScreen: React.FC = () => {
 
   const onPress = (n: AppNotification) => {
     if (!n.read) dispatch(markReadThunk(n.id));
-    // InquiriesStack/VisitsStack/PropertyStack are tabs nested inside the
-    // root-level "Main" navigator. NotificationsStack is also at root level,
-    // so we must route through Main to reach those tabs — a bare
-    // `navigate('InquiriesStack', …)` from here silently no-ops.
+    // The consumer-only stacks (InquiriesStack/VisitsStack/PropertyStack) live
+    // inside the root "Main" navigator and don't exist in the seller tab tree,
+    // so we route sellers to their equivalent surfaces (LeadsTab) instead.
     if (n.type === 'inquiry_update') {
-      navigation.navigate('Main', {
-        screen: 'InquiriesStack',
-        params: n.actionId
-          ? { screen: 'InquiryDetail', params: { id: n.actionId } }
-          : { screen: 'MyInquiries' },
-      });
+      if (isSeller) {
+        navigation.navigate('Main', { screen: 'LeadsTab', params: { screen: 'Leads' } });
+      } else {
+        navigation.navigate('Main', {
+          screen: 'InquiriesStack',
+          params: n.actionId
+            ? { screen: 'InquiryDetail', params: { id: n.actionId } }
+            : { screen: 'MyInquiries' },
+        });
+      }
     } else if (n.type === 'visit_reminder') {
-      navigation.navigate('Main', {
-        screen: 'VisitsStack',
-        params: { screen: 'UpcomingVisits' },
-      });
+      if (isSeller) {
+        navigation.navigate('Main', {
+          screen: 'LeadsTab',
+          params: { screen: 'Leads', params: { initialTab: 'visit_booked' } },
+        });
+      } else {
+        navigation.navigate('Main', {
+          screen: 'VisitsStack',
+          params: { screen: 'UpcomingVisits' },
+        });
+      }
     } else if (n.type === 'new_property' || n.type === 'price_drop') {
       if (!n.actionId) return;
       navigation.navigate('Main', {
@@ -80,7 +92,12 @@ export const NotificationsScreen: React.FC = () => {
         params: { screen: 'PropertyDetail', params: { id: n.actionId } },
       });
     } else if (n.type === 'message') {
-      navigation.navigate('ChatStack', { screen: 'Chat' });
+      // For sellers, "New lead received" → take them to the Leads tab.
+      if (isSeller) {
+        navigation.navigate('Main', { screen: 'LeadsTab', params: { screen: 'Leads' } });
+      } else {
+        navigation.navigate('ChatStack', { screen: 'Chat' });
+      }
     }
   };
 

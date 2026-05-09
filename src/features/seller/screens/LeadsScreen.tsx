@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -53,13 +53,22 @@ const statusMeta = (s: LeadStatus): { label: string; tone: 'info' | 'warning' | 
   }
 };
 
+type LeadsRouteProp = RouteProp<{ Leads: { initialTab?: 'all' | LeadStatus } | undefined }, 'Leads'>;
+
 export const LeadsScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<any>();
+  const route = useRoute<LeadsRouteProp>();
   const dispatch = useAppDispatch();
   const { leads, loading } = useAppSelector(s => s.seller);
-  const [tab, setTab] = useState<'all' | LeadStatus>('all');
+  const [tab, setTab] = useState<'all' | LeadStatus>(route.params?.initialTab ?? 'all');
   const [refreshing, setRefreshing] = useState(false);
+
+  // If we navigate back to this screen with a different initial tab param,
+  // honor it without unmounting the screen.
+  useEffect(() => {
+    if (route.params?.initialTab) setTab(route.params.initialTab);
+  }, [route.params?.initialTab]);
 
   useEffect(() => {
     dispatch(loadLeadsThunk());

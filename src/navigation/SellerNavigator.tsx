@@ -13,7 +13,7 @@ export type SellerStackParamList = {
   SellerHome: undefined;
   MyListings: undefined;
   AddListing: undefined;
-  Leads: undefined;
+  Leads: { initialTab?: 'all' | 'new' | 'contacted' | 'visit_booked' | 'closed_won' | 'closed_lost' } | undefined;
   Analytics: undefined;
   Plans: undefined;
 };
