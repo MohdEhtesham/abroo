@@ -79,6 +79,11 @@ export const PropertyListScreen: React.FC = () => {
         }
         onEndReached={onEnd}
         onEndReachedThreshold={0.4}
+        // Perf: keep memory low + scrolling smooth on long lists
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={9}
+        removeClippedSubviews
         ListFooterComponent={
           loading && page > 1 ? (
             <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 20 }} />

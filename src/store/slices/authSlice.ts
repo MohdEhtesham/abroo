@@ -2,14 +2,34 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../features/auth/services/authService';
 import type { AuthState, SellerPlan, User, UserPreferences, UserRole } from '../../features/auth/types';
 import { setAuthToken } from '../../services/apiClient';
+import { storage } from '../../utils/storage';
 
-const initialState: AuthState = {
+interface ExtendedAuthState extends AuthState {
+  /** True until we've finished loading persisted auth from storage on app start. */
+  rehydrating: boolean;
+}
+
+const initialState: ExtendedAuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
   loading: false,
   error: null,
+  rehydrating: true,
 };
+
+/** Read persisted auth (token + user) from disk and restore session if valid. */
+export const rehydrateAuthThunk = createAsyncThunk('auth/rehydrate', async () => {
+  const persisted = await storage.getAuth();
+  if (!persisted) return null;
+  setAuthToken(persisted.token);
+  return persisted;
+});
+
+/** Called by apiClient on a 401 — drops session everywhere. */
+export const forceLogoutThunk = createAsyncThunk('auth/forceLogout', async () => {
+  await storage.clearAuth();
+});
 
 export const loginThunk = createAsyncThunk(
   'auth/login',
@@ -54,7 +74,13 @@ export const verifyOtpThunk = createAsyncThunk(
 );
 
 export const logoutThunk = createAsyncThunk('auth/logout', async () => {
-  await authService.logout();
+  // Always clear local state even if the server logout fails (e.g. offline)
+  try {
+    await authService.logout();
+  } catch {
+    // ignore — local logout is what matters
+  }
+  await storage.clearAuth();
 });
 
 export const deleteAccountThunk = createAsyncThunk(
@@ -62,6 +88,7 @@ export const deleteAccountThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await authService.deleteAccount();
+      await storage.clearAuth();
       return true;
     } catch (e: any) {
       return rejectWithValue(e?.message ?? 'Failed to delete account');
@@ -127,6 +154,8 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         setAuthToken(action.payload.token);
+        // Fire-and-forget: persist for next launch
+        storage.saveAuth({ token: action.payload.token, user: action.payload.user });
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.loading = false;
@@ -142,6 +171,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         setAuthToken(action.payload.token);
+        storage.saveAuth({ token: action.payload.token, user: action.payload.user });
       })
       .addCase(signupThunk.rejected, (state, action) => {
         state.loading = false;
@@ -152,6 +182,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         setAuthToken(action.payload.token);
+        storage.saveAuth({ token: action.payload.token, user: action.payload.user });
       })
       .addCase(logoutThunk.fulfilled, state => {
         state.user = null;
@@ -160,6 +191,23 @@ const authSlice = createSlice({
         setAuthToken(null);
       })
       .addCase(deleteAccountThunk.fulfilled, state => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        setAuthToken(null);
+      })
+      .addCase(rehydrateAuthThunk.fulfilled, (state, action) => {
+        state.rehydrating = false;
+        if (action.payload) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = true;
+        }
+      })
+      .addCase(rehydrateAuthThunk.rejected, state => {
+        state.rehydrating = false;
+      })
+      .addCase(forceLogoutThunk.fulfilled, state => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;

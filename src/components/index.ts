@@ -17,4 +17,5 @@ export * from './Avatar';
 export * from './Chip';
 export * from './Card';
 export * from './CountUp';
+export * from './ErrorBoundary';
 export * from './FadeSlideIn';

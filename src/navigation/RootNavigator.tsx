@@ -17,14 +17,24 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export const RootNavigator: React.FC = () => {
   const theme = useTheme();
   const isAuthenticated = useAppSelector(s => s.auth.isAuthenticated);
+  const rehydrating = useAppSelector(s => (s.auth as any).rehydrating ?? false);
   const role = useAppSelector(s => s.auth.user?.role ?? 'consumer');
   const [splashDone, setSplashDone] = useState(false);
   const [authInitialRoute, setAuthInitialRoute] = useState<keyof AuthStackParamList | null>(null);
 
   useEffect(() => {
-    storage.getOnboardingSeen().then(seen => {
-      setAuthInitialRoute(seen ? 'Login' : 'Onboarding');
-    });
+    let cancelled = false;
+    storage
+      .getOnboardingSeen()
+      .then(seen => {
+        if (!cancelled) setAuthInitialRoute(seen ? 'Login' : 'Onboarding');
+      })
+      .catch(() => {
+        if (!cancelled) setAuthInitialRoute('Onboarding');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const navTheme: Theme = {
@@ -40,7 +50,8 @@ export const RootNavigator: React.FC = () => {
     },
   };
 
-  if (!splashDone || authInitialRoute === null) {
+  // Hold splash while: animation playing, onboarding flag loading, OR auth rehydrating
+  if (!splashDone || authInitialRoute === null || rehydrating) {
     return <SplashScreen onFinish={() => setSplashDone(true)} />;
   }
 

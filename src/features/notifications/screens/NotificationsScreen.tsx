@@ -95,6 +95,10 @@ export const NotificationsScreen: React.FC = () => {
           data={list}
           keyExtractor={n => n.id}
           contentContainerStyle={{ paddingVertical: 6 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={11}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
           }

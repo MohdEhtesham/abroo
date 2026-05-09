@@ -22,6 +22,7 @@ import {
   Text,
 } from '../../../components';
 import { CITIES, PROPERTY_TYPES } from '../../../constants';
+import { useThrottledCallback } from '../../../hooks';
 import { useAppDispatch, useAppSelector } from '../../../store';
 import { loadHomeThunk, toggleSaved } from '../../../store/slices/propertySlice';
 import { useTheme } from '../../../theme';
@@ -48,9 +49,14 @@ export const HomeScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const goSearch = () => navigation.navigate('PropertyStack', { screen: 'Search' });
-  const goDetail = (id: string) => navigation.navigate('PropertyStack', { screen: 'PropertyDetail', params: { id } });
-  const goNotifs = () => navigation.navigate('NotificationsStack');
+  // Multi-tap guard: prevent double-pushed detail screens / nav stack duplication
+  const goSearch = useThrottledCallback(
+    () => navigation.navigate('PropertyStack', { screen: 'Search' }),
+  );
+  const goDetail = useThrottledCallback((id: string) =>
+    navigation.navigate('PropertyStack', { screen: 'PropertyDetail', params: { id } }),
+  );
+  const goNotifs = useThrottledCallback(() => navigation.navigate('NotificationsStack'));
 
   return (
     <Screen edges={['top']} background={theme.colors.background}>
