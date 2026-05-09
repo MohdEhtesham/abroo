@@ -57,12 +57,28 @@ export const NotificationsScreen: React.FC = () => {
 
   const onPress = (n: AppNotification) => {
     if (!n.read) dispatch(markReadThunk(n.id));
+    // InquiriesStack/VisitsStack/PropertyStack are tabs nested inside the
+    // root-level "Main" navigator. NotificationsStack is also at root level,
+    // so we must route through Main to reach those tabs — a bare
+    // `navigate('InquiriesStack', …)` from here silently no-ops.
     if (n.type === 'inquiry_update') {
-      navigation.navigate('InquiriesStack', { screen: 'InquiryDetail', params: { id: n.actionId } });
+      navigation.navigate('Main', {
+        screen: 'InquiriesStack',
+        params: n.actionId
+          ? { screen: 'InquiryDetail', params: { id: n.actionId } }
+          : { screen: 'MyInquiries' },
+      });
     } else if (n.type === 'visit_reminder') {
-      navigation.navigate('VisitsStack', { screen: 'UpcomingVisits' });
+      navigation.navigate('Main', {
+        screen: 'VisitsStack',
+        params: { screen: 'UpcomingVisits' },
+      });
     } else if (n.type === 'new_property' || n.type === 'price_drop') {
-      navigation.navigate('PropertyStack', { screen: 'PropertyDetail', params: { id: n.actionId } });
+      if (!n.actionId) return;
+      navigation.navigate('Main', {
+        screen: 'PropertyStack',
+        params: { screen: 'PropertyDetail', params: { id: n.actionId } },
+      });
     } else if (n.type === 'message') {
       navigation.navigate('ChatStack', { screen: 'Chat' });
     }
