@@ -14,6 +14,7 @@ import {
 } from '../../../components';
 import { UpgradeProCard } from '../components/UpgradeProCard';
 import { useAppDispatch, useAppSelector } from '../../../store';
+import { loadNotificationsThunk } from '../../../store/slices/notificationSlice';
 import {
   loadAnalyticsThunk,
   loadLeadsThunk,
@@ -29,15 +30,18 @@ export const SellerHomeScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const user = useAppSelector(s => s.auth.user);
   const { listings, leads, analytics, visits } = useAppSelector(s => s.seller);
+  const unreadNotifs = useAppSelector(s => s.notification.list.filter(n => !n.read).length);
 
   // Refresh on every focus so a buyer booking a visit or submitting an
-  // inquiry shows up the next time the seller lands on Home.
+  // inquiry — plus any seller-side notification — shows up the next time
+  // the seller lands on Home.
   useFocusEffect(
     useCallback(() => {
       dispatch(loadListingsThunk());
       dispatch(loadLeadsThunk());
       dispatch(loadAnalyticsThunk());
       dispatch(loadSellerVisitsThunk());
+      dispatch(loadNotificationsThunk());
     }, [dispatch]),
   );
 
@@ -69,7 +73,21 @@ export const SellerHomeScreen: React.FC = () => {
               </View>
             </View>
             <Pressable
-              style={styles.planChip}
+              onPress={() => navigation.navigate('NotificationsStack')}
+              style={styles.bellBtn}
+              hitSlop={8}
+            >
+              <Icon name="notifications-outline" size={20} color="#fff" />
+              {unreadNotifs > 0 && (
+                <View style={[styles.bellBadge, { backgroundColor: theme.colors.accent }]}>
+                  <Text variant="caption" weight="800" style={{ color: '#fff', fontSize: 9 }}>
+                    {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.planChip, { marginLeft: 8 }]}
               onPress={() => navigation.navigate('Plans')}
             >
               <Icon name="flash" size={12} color={theme.colors.accent} />
@@ -309,6 +327,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  bellBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kpisRow: {
     flexDirection: 'row',

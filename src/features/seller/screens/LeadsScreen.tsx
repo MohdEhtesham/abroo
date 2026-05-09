@@ -198,7 +198,17 @@ export const LeadsScreen: React.FC = () => {
 
                 <View style={styles.actionsRow}>
                   <Pressable
-                    onPress={() => Linking.openURL(`tel:${item.consumerPhone}`)}
+                    onPress={async () => {
+                      Linking.openURL(`tel:${item.consumerPhone}`);
+                      // Calling a brand-new lead means we've engaged the
+                      // buyer — auto-advance the funnel so this lead leaves
+                      // 'New' without needing an extra tap. We don't regress
+                      // contacted/visit_booked/closed_* leads.
+                      if (item.status === 'new') {
+                        await dispatch(setLeadStatusThunk({ id: item.id, status: 'contacted' }));
+                        if (item.id.startsWith('visit_')) dispatch(loadLeadsThunk());
+                      }
+                    }}
                     style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]}
                   >
                     <Icon name="call" size={14} color="#fff" />
@@ -207,11 +217,15 @@ export const LeadsScreen: React.FC = () => {
                     </Text>
                   </Pressable>
                   <Pressable
-                    onPress={() =>
+                    onPress={async () => {
                       Linking.openURL(
                         `https://wa.me/91${item.consumerPhone}?text=Hi%20${item.consumerName.split(' ')[0]}%2C%20regarding%20your%20inquiry%20on%20${encodeURIComponent(item.listingTitle)}`,
-                      )
-                    }
+                      );
+                      if (item.status === 'new') {
+                        await dispatch(setLeadStatusThunk({ id: item.id, status: 'contacted' }));
+                        if (item.id.startsWith('visit_')) dispatch(loadLeadsThunk());
+                      }
+                    }}
                     style={[styles.actionBtn, { backgroundColor: '#25D366' }]}
                   >
                     <Icon name="logo-whatsapp" size={14} color="#fff" />
