@@ -1,6 +1,10 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { propertyService } from '../../features/property/services/propertyService';
-import type { Property, PropertyFilters } from '../../features/property/types';
+import type {
+  Property,
+  PropertyFilters,
+  SelectedLocation,
+} from '../../features/property/types';
 
 interface PropertyState {
   list: Property[];
@@ -8,6 +12,12 @@ interface PropertyState {
   trending: Property[];
   recommended: Property[];
   filters: PropertyFilters;
+  /** Globally-applied location chosen by the user. Reflected into filter
+   *  city + locality on every list/home fetch. */
+  selectedLocation: SelectedLocation | null;
+  /** Most recently picked locations — surfaced as quick-access chips
+   *  inside the picker. Capped to 5. */
+  recentLocations: SelectedLocation[];
   saved: string[];
   loading: boolean;
   homeLoading: boolean;
@@ -22,6 +32,8 @@ const initialState: PropertyState = {
   trending: [],
   recommended: [],
   filters: {},
+  selectedLocation: null,
+  recentLocations: [],
   saved: [],
   loading: false,
   homeLoading: false,
@@ -61,6 +73,39 @@ const propertySlice = createSlice({
       state.page = 1;
       state.list = [];
       state.hasMore = true;
+    },
+    setLocation: (state, action: PayloadAction<SelectedLocation | null>) => {
+      const loc = action.payload;
+      state.selectedLocation = loc;
+      // Mirror into filters so anything reading filters.city / .locality
+      // (including the existing /properties API query builder) picks it up
+      // immediately.
+      state.filters = {
+        ...state.filters,
+        city: loc?.city,
+        locality: loc?.locality,
+      };
+      state.page = 1;
+      state.list = [];
+      state.hasMore = true;
+      if (loc) {
+        // Push to recents (dedupe by city+locality, keep newest at the top, cap 5).
+        const key = `${loc.city}::${loc.locality ?? ''}`;
+        const filtered = state.recentLocations.filter(
+          r => `${r.city}::${r.locality ?? ''}` !== key,
+        );
+        state.recentLocations = [loc, ...filtered].slice(0, 5);
+      }
+    },
+    clearLocation: state => {
+      state.selectedLocation = null;
+      state.filters = { ...state.filters, city: undefined, locality: undefined };
+      state.page = 1;
+      state.list = [];
+      state.hasMore = true;
+    },
+    clearRecentLocations: state => {
+      state.recentLocations = [];
     },
     toggleSaved: (state, action: PayloadAction<string>) => {
       const id = action.payload;
@@ -113,5 +158,12 @@ const propertySlice = createSlice({
   },
 });
 
-export const { setFilters, toggleSaved, clearList } = propertySlice.actions;
+export const {
+  setFilters,
+  setLocation,
+  clearLocation,
+  clearRecentLocations,
+  toggleSaved,
+  clearList,
+} = propertySlice.actions;
 export default propertySlice.reducer;

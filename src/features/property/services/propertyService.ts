@@ -13,7 +13,14 @@ import type { Property, PropertyFilters } from '../types';
 
 const applyFilters = (list: Property[], filters: PropertyFilters): Property[] => {
   let out = [...list];
-  if (filters.city) out = out.filter(p => p.city === filters.city);
+  if (filters.city) {
+    const c = filters.city.toLowerCase();
+    out = out.filter(p => p.city.toLowerCase() === c);
+  }
+  if (filters.locality) {
+    const l = filters.locality.toLowerCase();
+    out = out.filter(p => p.locality?.toLowerCase().includes(l));
+  }
   if (filters.types?.length) out = out.filter(p => filters.types!.includes(p.type));
   if (filters.bhk?.length) {
     out = out.filter(p => p.configuration.some(c => filters.bhk!.includes(c)));
@@ -71,6 +78,7 @@ const mock = {
 const buildQuery = (filters: PropertyFilters, page: number, pageSize: number) => {
   const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
   if (filters.city) params.city = filters.city;
+  if (filters.locality) params.locality = filters.locality;
   if (filters.types?.length) params.types = filters.types.join(',');
   if (filters.bhk?.length) params.bhk = filters.bhk.join(',');
   if (filters.budgetMin != null) params.budgetMin = String(filters.budgetMin);

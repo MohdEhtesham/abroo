@@ -59,6 +59,8 @@ export interface Property {
 
 export interface PropertyFilters {
   city?: string;
+  /** Locality / area inside the city (e.g. "Powai" within Mumbai). */
+  locality?: string;
   types?: PropertyType[];
   bhk?: string[];
   budgetMin?: number;
@@ -66,4 +68,16 @@ export interface PropertyFilters {
   possessionStatus?: PossessionStatus[];
   amenities?: string[];
   search?: string;
+}
+
+export interface SelectedLocation {
+  /** What we show in chips/pills ("Powai" or "Mumbai"). */
+  primary: string;
+  /** Muted context shown beneath the primary line. */
+  secondary?: string;
+  city: string;
+  locality?: string;
+  state?: string;
+  lat?: number;
+  lng?: number;
 }

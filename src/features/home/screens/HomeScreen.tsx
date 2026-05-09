@@ -21,11 +21,18 @@ import {
   SectionHeader,
   Text,
 } from '../../../components';
-import { CITIES, PROPERTY_TYPES } from '../../../constants';
+import { PROPERTY_TYPES } from '../../../constants';
 import { useThrottledCallback } from '../../../hooks';
 import { useAppDispatch, useAppSelector } from '../../../store';
-import { loadHomeThunk, toggleSaved } from '../../../store/slices/propertySlice';
+import {
+  clearRecentLocations,
+  loadHomeThunk,
+  setLocation,
+  toggleSaved,
+} from '../../../store/slices/propertySlice';
 import { useTheme } from '../../../theme';
+import { LocationPicker } from '../../location/components/LocationPicker';
+import type { LocationSearchResult } from '../../location/services/locationService';
 
 export const HomeScreen: React.FC = () => {
   const theme = useTheme();
@@ -33,15 +40,49 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { featured, trending, recommended, homeLoading, saved } = useAppSelector(s => s.property);
+  const selectedLocation = useAppSelector(s => s.property.selectedLocation);
+  const recentLocations = useAppSelector(s => s.property.recentLocations);
   const { user } = useAppSelector(s => s.auth);
   const unread = useAppSelector(s => s.notification.list.filter(n => !n.read).length);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [city, setCity] = useState('Gurgaon');
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const onLocationPicked = (r: LocationSearchResult) => {
+    dispatch(
+      setLocation({
+        primary: r.primary,
+        secondary: r.secondary,
+        city: r.city,
+        locality: r.locality,
+        state: r.state,
+        lat: r.lat,
+        lng: r.lng,
+      }),
+    );
+  };
+
+  // Recents need to be in LocationSearchResult shape for the picker; only
+  // primary/secondary/city/locality round-trip back into setLocation.
+  const recentsForPicker = recentLocations.map((r, i) => ({
+    id: `recent-${i}`,
+    displayName: r.primary,
+    primary: r.primary,
+    secondary: r.secondary ?? '',
+    city: r.city,
+    locality: r.locality,
+    state: r.state,
+    lat: r.lat ?? 0,
+    lng: r.lng ?? 0,
+    kind: 'recent',
+  }));
 
   useEffect(() => {
     dispatch(loadHomeThunk());
-  }, [dispatch]);
+    // The home thunk doesn't take filters today (the featured / trending
+    // /recommended endpoints are global), but we still refresh on location
+    // change so any future location-aware home content stays in sync.
+  }, [dispatch, selectedLocation?.city, selectedLocation?.locality]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -112,38 +153,35 @@ export const HomeScreen: React.FC = () => {
         </LinearGradient>
 
         <FadeSlideIn delay={200}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cityRow}
-        >
-          {CITIES.map(c => (
-            <Pressable
-              key={c}
-              onPress={() => setCity(c)}
-              style={[
-                styles.cityChip,
-                {
-                  backgroundColor: c === city ? theme.colors.primary : theme.colors.surfaceElevated,
-                  borderColor: c === city ? theme.colors.primary : theme.colors.border,
-                },
-              ]}
-            >
-              <Icon
-                name="location"
-                size={13}
-                color={c === city ? '#fff' : theme.colors.textMuted}
-              />
-              <Text
-                variant="bodySm"
-                weight="600"
-                style={{ color: c === city ? '#fff' : theme.colors.text, marginLeft: 5 }}
-              >
-                {c}
+          <Pressable
+            onPress={() => setPickerOpen(true)}
+            style={[
+              styles.locationPill,
+              {
+                backgroundColor: theme.colors.surfaceElevated,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <View style={[styles.locationDot, { backgroundColor: theme.colors.primary + '14' }]}>
+              <Icon name="location" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text variant="caption" color="textMuted" style={{ letterSpacing: 0.4 }}>
+                LOCATION
               </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+              <Text variant="body" weight="700" numberOfLines={1} style={{ marginTop: 1 }}>
+                {selectedLocation
+                  ? selectedLocation.locality
+                    ? `${selectedLocation.locality}, ${selectedLocation.city}`
+                    : selectedLocation.city
+                  : 'Search any city or area in India'}
+              </Text>
+            </View>
+            <Text variant="caption" weight="700" style={{ color: theme.colors.primary }}>
+              {selectedLocation ? 'Change' : 'Choose'}
+            </Text>
+          </Pressable>
         </FadeSlideIn>
 
         <FadeSlideIn delay={260}>
@@ -239,6 +277,14 @@ export const HomeScreen: React.FC = () => {
               ))}
         </View>
       </ScrollView>
+
+      <LocationPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={onLocationPicked}
+        recents={recentsForPicker}
+        onClearRecents={() => dispatch(clearRecentLocations())}
+      />
     </Screen>
   );
 };
@@ -282,18 +328,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cityRow: {
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    gap: 8,
-  },
-  cityChip: {
+  locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 16,
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 999,
+    paddingVertical: 12,
+    borderRadius: 14,
     borderWidth: 1,
+  },
+  locationDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   catRow: {
     paddingHorizontal: 20,

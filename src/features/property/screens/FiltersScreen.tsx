@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
   AnimatedHeader,
   Chip,
@@ -9,12 +10,19 @@ import {
   SectionHeader,
   Text,
 } from '../../../components';
-import { BHK_OPTIONS, BUDGET_RANGES, CITIES, POSSESSION_STATUS, PROPERTY_TYPES } from '../../../constants';
+import { BHK_OPTIONS, BUDGET_RANGES, POSSESSION_STATUS, PROPERTY_TYPES } from '../../../constants';
 import { useAppDispatch, useAppSelector } from '../../../store';
-import { loadListThunk, setFilters } from '../../../store/slices/propertySlice';
+import {
+  clearRecentLocations,
+  loadListThunk,
+  setFilters,
+  setLocation,
+} from '../../../store/slices/propertySlice';
 import { useTheme } from '../../../theme';
 import { ALL_AMENITIES } from '../mockData/amenities';
 import type { PossessionStatus, PropertyType } from '../types';
+import { LocationPicker } from '../../location/components/LocationPicker';
+import type { LocationSearchResult } from '../../location/services/locationService';
 
 export const FiltersScreen: React.FC = () => {
   const theme = useTheme();
@@ -22,7 +30,9 @@ export const FiltersScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const current = useAppSelector(s => s.property.filters);
 
-  const [city, setCity] = useState(current.city);
+  const selectedLocation = useAppSelector(s => s.property.selectedLocation);
+  const recentLocations = useAppSelector(s => s.property.recentLocations);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [types, setTypes] = useState<PropertyType[]>(current.types ?? []);
   const [bhk, setBhk] = useState<string[]>(current.bhk ?? []);
   const [budget, setBudget] = useState<{ min?: number; max?: number }>({ min: current.budgetMin, max: current.budgetMax });
@@ -32,9 +42,37 @@ export const FiltersScreen: React.FC = () => {
   const toggle = <T,>(list: T[], value: T): T[] =>
     list.includes(value) ? list.filter(x => x !== value) : [...list, value];
 
+  const onLocationPicked = (r: LocationSearchResult) => {
+    dispatch(
+      setLocation({
+        primary: r.primary,
+        secondary: r.secondary,
+        city: r.city,
+        locality: r.locality,
+        state: r.state,
+        lat: r.lat,
+        lng: r.lng,
+      }),
+    );
+  };
+
+  const recentsForPicker = recentLocations.map((r, i) => ({
+    id: `recent-${i}`,
+    displayName: r.primary,
+    primary: r.primary,
+    secondary: r.secondary ?? '',
+    city: r.city,
+    locality: r.locality,
+    state: r.state,
+    lat: r.lat ?? 0,
+    lng: r.lng ?? 0,
+    kind: 'recent',
+  }));
+
   const apply = () => {
     const filters = {
-      city,
+      city: selectedLocation?.city,
+      locality: selectedLocation?.locality,
       types: types.length ? types : undefined,
       bhk: bhk.length ? bhk : undefined,
       budgetMin: budget.min,
@@ -48,7 +86,7 @@ export const FiltersScreen: React.FC = () => {
   };
 
   const reset = () => {
-    setCity(undefined);
+    dispatch(setLocation(null));
     setTypes([]);
     setBhk([]);
     setBudget({});
@@ -65,12 +103,46 @@ export const FiltersScreen: React.FC = () => {
         onRightPress={reset}
       />
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
-        <SectionHeader title="City" style={{ paddingHorizontal: 0 }} />
-        <View style={styles.wrap}>
-          {CITIES.map(c => (
-            <Chip key={c} label={c} selected={city === c} onPress={() => setCity(city === c ? undefined : c)} />
-          ))}
-        </View>
+        <SectionHeader title="Location" style={{ paddingHorizontal: 0 }} />
+        <Pressable
+          onPress={() => setPickerOpen(true)}
+          style={[
+            styles.locationRow,
+            { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+          ]}
+        >
+          <View style={[styles.locationIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+            <Icon name="location" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            {selectedLocation ? (
+              <>
+                <Text variant="body" weight="700" numberOfLines={1}>
+                  {selectedLocation.locality
+                    ? `${selectedLocation.locality}, ${selectedLocation.city}`
+                    : selectedLocation.city}
+                </Text>
+                {!!selectedLocation.secondary && (
+                  <Text variant="caption" color="textMuted" numberOfLines={1} style={{ marginTop: 1 }}>
+                    {selectedLocation.secondary}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <>
+                <Text variant="body" weight="700">
+                  Search any location in India
+                </Text>
+                <Text variant="caption" color="textMuted" style={{ marginTop: 1 }}>
+                  City, suburb or area
+                </Text>
+              </>
+            )}
+          </View>
+          <Text variant="caption" weight="700" style={{ color: theme.colors.primary }}>
+            {selectedLocation ? 'Change' : 'Choose'}
+          </Text>
+        </Pressable>
 
         <SectionHeader title="Property type" style={{ paddingHorizontal: 0, marginTop: 18 }} />
         <View style={styles.wrap}>
@@ -149,6 +221,14 @@ export const FiltersScreen: React.FC = () => {
       <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
         <GradientButton title="Apply Filters" onPress={apply} size="lg" />
       </View>
+
+      <LocationPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={onLocationPicked}
+        recents={recentsForPicker}
+        onClearRecents={() => dispatch(clearRecentLocations())}
+      />
     </Screen>
   );
 };
@@ -158,6 +238,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  locationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   budget: {
     paddingHorizontal: 14,
