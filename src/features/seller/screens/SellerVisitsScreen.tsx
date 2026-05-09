@@ -1,4 +1,4 @@
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -66,6 +66,7 @@ export const SellerVisitsScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // Initial mount: track loading until the first fetch resolves.
   useEffect(() => {
     let cancelled = false;
     dispatch(loadSellerVisitsThunk()).finally(() => {
@@ -75,6 +76,14 @@ export const SellerVisitsScreen: React.FC = () => {
       cancelled = true;
     };
   }, [dispatch]);
+
+  // Refresh on every focus so newly-booked visits show up when the seller
+  // navigates back here.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(loadSellerVisitsThunk());
+    }, [dispatch]),
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

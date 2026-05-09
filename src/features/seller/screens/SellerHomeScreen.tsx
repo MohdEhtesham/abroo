@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -30,12 +30,16 @@ export const SellerHomeScreen: React.FC = () => {
   const user = useAppSelector(s => s.auth.user);
   const { listings, leads, analytics, visits } = useAppSelector(s => s.seller);
 
-  useEffect(() => {
-    dispatch(loadListingsThunk());
-    dispatch(loadLeadsThunk());
-    dispatch(loadAnalyticsThunk());
-    dispatch(loadSellerVisitsThunk());
-  }, [dispatch]);
+  // Refresh on every focus so a buyer booking a visit or submitting an
+  // inquiry shows up the next time the seller lands on Home.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(loadListingsThunk());
+      dispatch(loadLeadsThunk());
+      dispatch(loadAnalyticsThunk());
+      dispatch(loadSellerVisitsThunk());
+    }, [dispatch]),
+  );
 
   const live = listings.filter(l => l.status === 'live').length;
   const newLeads = leads.filter(l => l.status === 'new').length;

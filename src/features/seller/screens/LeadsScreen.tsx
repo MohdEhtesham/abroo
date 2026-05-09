@@ -1,5 +1,5 @@
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -70,9 +70,14 @@ export const LeadsScreen: React.FC = () => {
     if (route.params?.initialTab) setTab(route.params.initialTab);
   }, [route.params?.initialTab]);
 
-  useEffect(() => {
-    dispatch(loadLeadsThunk());
-  }, [dispatch]);
+  // Reload every time this screen is focused — buyers booking visits or
+  // submitting inquiries don't push state to the seller's running app, so
+  // we re-fetch on every entry instead of only on mount.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(loadLeadsThunk());
+    }, [dispatch]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
