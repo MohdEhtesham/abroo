@@ -3,10 +3,8 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   View,
@@ -24,7 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { CustomTextInput, GradientButton, Text } from '../../../components';
+import { CustomTextInput, GradientButton, KeyboardScreen, Text } from '../../../components';
 import { useTheme } from '../../../theme';
 import { forgotSchema } from '../../../utils/validators';
 import { AuthBackgroundOrbs } from '../components/AuthBackgroundOrbs';
@@ -154,10 +152,7 @@ export const ForgotPasswordScreen: React.FC = () => {
         </Animated.View>
       </LinearGradient>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, marginTop: -28 }}
-      >
+      <View style={{ flex: 1, marginTop: -28 }}>
         <Animated.View
           style={[
             styles.card,
@@ -165,11 +160,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             cardStyle,
           ]}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 30 }}
-            keyboardShouldPersistTaps="handled"
-          >
+          <KeyboardScreen contentContainerStyle={{ paddingBottom: 30 }}>
             {!sent ? (
               <>
                 <Controller
@@ -251,9 +242,9 @@ export const ForgotPasswordScreen: React.FC = () => {
                 </Text>
               </Pressable>
             </View>
-          </ScrollView>
+          </KeyboardScreen>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 };

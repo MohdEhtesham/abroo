@@ -4,7 +4,6 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import {
   BottomSheet,
   CustomTextInput,
   GradientButton,
+  KeyboardScreen,
   Screen,
   Text,
 } from '../../../components';
@@ -182,8 +182,7 @@ export const EditProfileScreen: React.FC = () => {
   return (
     <Screen edges={['top']}>
       <AnimatedHeader title="Edit Profile" onBackPress={() => navigation.goBack()} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }} keyboardShouldPersistTaps="handled">
+      <KeyboardScreen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }}>
           <Pressable
             onPress={openPicker}
             disabled={uploading}
@@ -265,8 +264,7 @@ export const EditProfileScreen: React.FC = () => {
               size="lg"
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScreen>
 
       {/* Android picker action sheet */}
       <BottomSheet

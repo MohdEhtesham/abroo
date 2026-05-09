@@ -2,12 +2,13 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import {
   AnimatedHeader,
   Card,
   CustomTextInput,
   GradientButton,
+  KeyboardScreen,
   Screen,
   Text,
 } from '../../../components';
@@ -66,11 +67,7 @@ export const InquiryFormScreen: React.FC = () => {
   return (
     <Screen edges={['top']}>
       <AnimatedHeader title="Submit Inquiry" onBackPress={() => navigation.goBack()} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30, paddingTop: 8 }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardScreen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30, paddingTop: 8 }}>
           {property && (
             <Card padding={12}>
               <View style={{ flexDirection: 'row' }}>
@@ -170,8 +167,7 @@ export const InquiryFormScreen: React.FC = () => {
           <Text variant="caption" color="textMuted" align="center" style={{ marginTop: 16 }}>
             By submitting you agree to be contacted by Aabroo advisors.
           </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScreen>
     </Screen>
   );
 };

@@ -152,57 +152,48 @@ export const SellerHomeScreen: React.FC = () => {
                 end={{ x: 1, y: 1 }}
                 style={styles.visitHero}
               >
-                {/* Decorative orbs for depth */}
                 <View style={[styles.visitOrb, styles.visitOrbA]} pointerEvents="none" />
-                <View style={[styles.visitOrb, styles.visitOrbB]} pointerEvents="none" />
 
-                <View style={styles.visitTopRow}>
+                <View style={styles.visitRow}>
                   <View style={styles.visitIconWrap}>
-                    <Icon name="videocam" size={22} color="#fff" />
+                    <Icon name="videocam" size={18} color="#fff" />
                   </View>
-                  <View style={styles.visitLivePill}>
-                    <View style={styles.visitLiveDot} />
-                    <Text variant="caption" weight="800" style={{ color: '#fff', letterSpacing: 1, fontSize: 10 }}>
-                      LIVE PIPELINE
-                    </Text>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <CountUp
+                        to={upcomingVisits}
+                        duration={700}
+                        variant="h2"
+                        weight="800"
+                        style={{ color: '#fff', fontSize: 22, lineHeight: 26 } as any}
+                      />
+                      <Text
+                        weight="700"
+                        style={{ color: 'rgba(255,255,255,0.92)', marginLeft: 6, fontSize: 13 }}
+                      >
+                        upcoming visit{upcomingVisits === 1 ? '' : 's'}
+                      </Text>
+                    </View>
+                    {nextVisit ? (
+                      <Text
+                        variant="caption"
+                        style={{ color: 'rgba(255,255,255,0.88)', marginTop: 2 }}
+                        numberOfLines={1}
+                      >
+                        Next: {nextVisit.buyer?.fullName?.split(' ')[0] ?? 'Buyer'} ·{' '}
+                        {formatDate(nextVisit.date)} · {nextVisit.timeSlot}
+                      </Text>
+                    ) : (
+                      <Text
+                        variant="caption"
+                        style={{ color: 'rgba(255,255,255,0.85)', marginTop: 2 }}
+                      >
+                        Tap to manage all visits
+                      </Text>
+                    )}
                   </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 16 }}>
-                  <CountUp
-                    to={upcomingVisits}
-                    duration={900}
-                    variant="h1"
-                    weight="800"
-                    style={{ color: '#fff', fontSize: 44, lineHeight: 50 } as any}
-                  />
-                  <Text
-                    weight="700"
-                    style={{ color: 'rgba(255,255,255,0.9)', marginLeft: 10, marginBottom: 8, fontSize: 15 }}
-                  >
-                    upcoming site visit{upcomingVisits === 1 ? '' : 's'}
-                  </Text>
-                </View>
-
-                {nextVisit && (
-                  <View style={styles.visitNextChip}>
-                    <Icon name="time-outline" size={14} color="#fff" />
-                    <Text variant="caption" weight="700" style={{ color: '#fff', marginLeft: 6 }} numberOfLines={1}>
-                      Next:{' '}
-                      <Text variant="caption" weight="800" style={{ color: '#fff' }}>
-                        {nextVisit.buyer?.fullName?.split(' ')[0] ?? 'Buyer'}
-                      </Text>{' '}
-                      · {formatDate(nextVisit.date)} · {nextVisit.timeSlot}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.visitFooter}>
-                  <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                    Tap to manage all visits
-                  </Text>
                   <View style={styles.visitArrow}>
-                    <Icon name="arrow-forward" size={16} color="#fff" />
+                    <Icon name="arrow-forward" size={14} color="#fff" />
                   </View>
                 </View>
               </LinearGradient>
@@ -443,88 +434,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   visitHero: {
-    padding: 18,
-    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   visitOrb: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   visitOrbA: {
-    width: 160,
-    height: 160,
-    top: -50,
-    right: -40,
+    width: 110,
+    height: 110,
+    top: -40,
+    right: -30,
   },
-  visitOrbB: {
-    width: 100,
-    height: 100,
-    bottom: -30,
-    left: -20,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  visitTopRow: {
+  visitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   visitIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.20)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  visitLivePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-  },
-  visitLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#fff',
-    marginRight: 6,
-  },
-  visitNextChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginTop: 14,
-    maxWidth: '100%',
-  },
-  visitFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
   visitArrow: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: 'rgba(0,0,0,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 8,
   },
 });

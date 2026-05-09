@@ -1,5 +1,6 @@
 export * from './Text';
 export * from './Screen';
+export * from './KeyboardScreen';
 export * from './GradientButton';
 export * from './CustomTextInput';
 export * from './SearchBar';

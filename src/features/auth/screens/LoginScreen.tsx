@@ -4,10 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   View,
@@ -26,6 +24,7 @@ import {
   BottomSheet,
   CustomTextInput,
   GradientButton,
+  KeyboardScreen,
   Text,
 } from '../../../components';
 import { APP_NAME } from '../../../constants';
@@ -156,10 +155,7 @@ export const LoginScreen: React.FC = () => {
       </LinearGradient>
 
       {/* CARD */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, marginTop: -28 }}
-      >
+      <View style={{ flex: 1, marginTop: -28 }}>
         <Animated.View
           style={[
             styles.card,
@@ -167,11 +163,7 @@ export const LoginScreen: React.FC = () => {
             formStyle,
           ]}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            keyboardShouldPersistTaps="handled"
-          >
+          <KeyboardScreen contentContainerStyle={{ paddingBottom: 24 }}>
             {/* Role tabs */}
             <Animated.View style={roleEntry}>
             <Text variant="caption" weight="700" color="textMuted" style={styles.fieldLabel}>
@@ -350,9 +342,9 @@ export const LoginScreen: React.FC = () => {
                 </Text>
               </Pressable>
             </Animated.View>
-          </ScrollView>
+          </KeyboardScreen>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
 
       <BottomSheet
         visible={otpSheetOpen}

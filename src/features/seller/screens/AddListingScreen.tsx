@@ -3,10 +3,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -18,6 +15,7 @@ import {
   Chip,
   CustomTextInput,
   GradientButton,
+  KeyboardScreen,
   Screen,
   SectionHeader,
   Text,
@@ -268,11 +266,7 @@ export const AddListingScreen: React.FC = () => {
         </View>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardScreen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }}>
           {step === 0 && (
             <View>
               <Text variant="h3" weight="700">Basics</Text>
@@ -579,9 +573,9 @@ export const AddListingScreen: React.FC = () => {
               )}
             </View>
           )}
-        </ScrollView>
+      </KeyboardScreen>
 
-        {step > 0 && (
+      {step > 0 && (
           <Pressable
             onPress={() => setStep(step - 1)}
             style={[
@@ -622,7 +616,6 @@ export const AddListingScreen: React.FC = () => {
             </Text>
           </Pressable>
         )}
-      </KeyboardAvoidingView>
     </Screen>
   );
 };
