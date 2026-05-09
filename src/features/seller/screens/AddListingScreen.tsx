@@ -10,6 +10,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
   AnimatedHeader,
@@ -95,6 +96,73 @@ export const AddListingScreen: React.FC = () => {
         : [...list, value];
       return { ...d, [key]: next };
     });
+
+  const MAX_IMAGES = 10;
+
+  const addImages = (uris: string[]) => {
+    setDraft(d => {
+      const remaining = MAX_IMAGES - d.images.length;
+      if (remaining <= 0) {
+        Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} photos.`);
+        return d;
+      }
+      const next = [...d.images, ...uris.slice(0, remaining)];
+      return { ...d, images: next };
+    });
+  };
+
+  const removeImage = (uri: string) => {
+    setDraft(d => ({ ...d, images: d.images.filter(x => x !== uri) }));
+  };
+
+  const takePhoto = async () => {
+    if (draft.images.length >= MAX_IMAGES) {
+      Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} photos.`);
+      return;
+    }
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        saveToPhotos: false,
+        cameraType: 'back',
+      });
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Camera error', result.errorMessage ?? 'Could not open camera');
+        return;
+      }
+      const uri = result.assets?.[0]?.uri;
+      if (uri) addImages([uri]);
+    } catch (e: any) {
+      Alert.alert('Camera unavailable', e?.message ?? 'Could not open camera');
+    }
+  };
+
+  const pickFromGallery = async () => {
+    if (draft.images.length >= MAX_IMAGES) {
+      Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} photos.`);
+      return;
+    }
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+        selectionLimit: MAX_IMAGES - draft.images.length,
+      });
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Gallery error', result.errorMessage ?? 'Could not open gallery');
+        return;
+      }
+      const uris = (result.assets ?? [])
+        .map(a => a.uri)
+        .filter((u): u is string => !!u);
+      if (uris.length) addImages(uris);
+    } catch (e: any) {
+      Alert.alert('Gallery unavailable', e?.message ?? 'Could not open gallery');
+    }
+  };
 
   const validateStep = (): string | null => {
     if (step === 0) {
@@ -329,36 +397,117 @@ export const AddListingScreen: React.FC = () => {
             <View>
               <Text variant="h3" weight="700">Photos</Text>
               <Text variant="bodySm" color="textSecondary" style={{ marginTop: 4, marginBottom: 18 }}>
-                Pick from our stock library (gallery picker coming soon).
+                Add up to 10 photos. First photo will be the cover.
               </Text>
-              <View style={styles.imageGrid}>
-                {STOCK_IMAGES.map(uri => {
-                  const selected = draft.images.includes(uri);
-                  return (
-                    <Pressable
-                      key={uri}
-                      onPress={() => toggle('images', uri)}
-                      style={[
-                        styles.imageCell,
-                        {
-                          borderColor: selected ? theme.colors.primary : theme.colors.border,
-                          borderWidth: selected ? 3 : 1,
-                        },
-                      ]}
-                    >
-                      <Image source={{ uri }} style={styles.image} />
-                      {selected && (
-                        <View style={[styles.imageBadge, { backgroundColor: theme.colors.primary }]}>
-                          <Icon name="checkmark" size={14} color="#fff" />
-                        </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
+
+              {/* Camera + Gallery buttons */}
+              <View style={styles.pickRow}>
+                <Pressable
+                  onPress={takePhoto}
+                  style={[
+                    styles.pickBtn,
+                    { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+                  ]}
+                >
+                  <View style={[styles.pickIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+                    <Icon name="camera" size={22} color={theme.colors.primary} />
+                  </View>
+                  <Text weight="700" style={{ marginTop: 8 }}>Take Photo</Text>
+                  <Text variant="caption" color="textMuted">Use camera</Text>
+                </Pressable>
+                <Pressable
+                  onPress={pickFromGallery}
+                  style={[
+                    styles.pickBtn,
+                    { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+                  ]}
+                >
+                  <View style={[styles.pickIcon, { backgroundColor: theme.colors.accent + '22' }]}>
+                    <Icon name="images" size={22} color={theme.colors.accentDark} />
+                  </View>
+                  <Text weight="700" style={{ marginTop: 8 }}>From Gallery</Text>
+                  <Text variant="caption" color="textMuted">Pick existing</Text>
+                </Pressable>
               </View>
-              <Text variant="caption" color="textMuted" align="center" style={{ marginTop: 14 }}>
-                {draft.images.length} photo{draft.images.length !== 1 ? 's' : ''} selected
-              </Text>
+
+              {/* Thumbnails of picked images */}
+              {draft.images.length > 0 && (
+                <View style={{ marginTop: 18 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                    <Text variant="bodySm" weight="700">Selected</Text>
+                    <View style={[styles.countPill, { backgroundColor: theme.colors.primary + '14' }]}>
+                      <Text variant="caption" weight="700" style={{ color: theme.colors.primary }}>
+                        {draft.images.length}/10
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.imageGrid}>
+                    {draft.images.map((uri, i) => (
+                      <View key={`${uri}-${i}`} style={[styles.imageCell, { borderColor: theme.colors.border, borderWidth: 1 }]}>
+                        <Image source={{ uri }} style={styles.image} />
+                        {i === 0 && (
+                          <View style={[styles.coverBadge, { backgroundColor: theme.colors.accent }]}>
+                            <Icon name="star" size={10} color="#fff" />
+                            <Text variant="caption" weight="800" style={{ color: '#fff', marginLeft: 3, fontSize: 9 }}>
+                              COVER
+                            </Text>
+                          </View>
+                        )}
+                        <Pressable
+                          onPress={() => removeImage(uri)}
+                          hitSlop={8}
+                          style={[styles.removeBtn, { backgroundColor: theme.colors.error }]}
+                        >
+                          <Icon name="close" size={14} color="#fff" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Stock library fallback */}
+              <View style={{ marginTop: 22 }}>
+                <View style={styles.stockHeader}>
+                  <Text variant="bodySm" weight="700" color="textSecondary">
+                    Or use stock photos
+                  </Text>
+                  <Text variant="caption" color="textMuted">
+                    Demo only
+                  </Text>
+                </View>
+                <View style={styles.imageGrid}>
+                  {STOCK_IMAGES.map(uri => {
+                    const selected = draft.images.includes(uri);
+                    return (
+                      <Pressable
+                        key={uri}
+                        onPress={() => toggle('images', uri)}
+                        style={[
+                          styles.imageCell,
+                          {
+                            borderColor: selected ? theme.colors.primary : theme.colors.border,
+                            borderWidth: selected ? 3 : 1,
+                          },
+                        ]}
+                      >
+                        <Image source={{ uri }} style={styles.image} />
+                        {selected && (
+                          <View style={[styles.imageBadge, { backgroundColor: theme.colors.primary }]}>
+                            <Icon name="checkmark" size={14} color="#fff" />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {draft.images.length === 0 && (
+                <Text variant="caption" color="textMuted" align="center" style={{ marginTop: 18 }}>
+                  No photos yet — add at least one to continue.
+                </Text>
+              )}
             </View>
           )}
 
@@ -534,6 +683,57 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pickRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  pickBtn: {
+    flex: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+  },
+  pickIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countPill: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  coverBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  removeBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stockHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   fabBack: {
     position: 'absolute',
