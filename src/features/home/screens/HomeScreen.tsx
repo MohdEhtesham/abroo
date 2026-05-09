@@ -73,7 +73,7 @@ export const HomeScreen: React.FC = () => {
         >
           <View style={styles.headerRow}>
             <Pressable onPress={() => navigation.navigate('ProfileStack')} style={styles.userRow}>
-              <Avatar name={user?.fullName ?? 'Guest'} uri={user?.avatar} size={42} />
+              <Avatar name={user?.fullName ?? 'Guest'} uri={user?.avatar} size={42} inverse />
               <View style={{ marginLeft: 10 }}>
                 <Text variant="caption" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   Welcome back

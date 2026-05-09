@@ -51,7 +51,7 @@ export const SellerHomeScreen: React.FC = () => {
         >
           <View style={styles.headerRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Avatar name={user?.fullName ?? 'Seller'} uri={user?.avatar} size={44} />
+              <Avatar name={user?.fullName ?? 'Seller'} uri={user?.avatar} size={44} inverse />
               <View style={{ marginLeft: 10 }}>
                 <Text variant="caption" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   Welcome back

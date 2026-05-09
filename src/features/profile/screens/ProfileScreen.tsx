@@ -99,7 +99,7 @@ export const ProfileScreen: React.FC = () => {
             <Icon name={theme.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={20} color="#fff" />
           </Pressable>
           <View style={styles.heroContent}>
-            <Avatar name={user?.fullName ?? 'Guest'} uri={user?.avatar} size={84} />
+            <Avatar name={user?.fullName ?? 'Guest'} uri={user?.avatar} size={84} inverse />
             <Text variant="h2" weight="800" style={{ color: '#fff', marginTop: 14 }}>
               {user?.fullName ?? 'Guest User'}
             </Text>
