@@ -48,6 +48,34 @@ export interface SellerLead {
   updatedAt: string;
 }
 
+export type SellerVisitStatus = 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
+export type SellerVisitMode = 'in_person' | 'virtual';
+
+export interface SellerVisitBuyer {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  avatar?: string;
+}
+
+export interface SellerVisit {
+  id: string;
+  propertyId: string;
+  propertyTitle: string;
+  propertyImage?: string;
+  propertyLocation?: string;
+  date: string;
+  timeSlot: string;
+  mode: SellerVisitMode;
+  status: SellerVisitStatus;
+  notes?: string;
+  advisorName?: string;
+  createdAt: string;
+  updatedAt: string;
+  buyer: SellerVisitBuyer | null;
+}
+
 export interface SellerAnalytics {
   totalViews: number;
   totalInquiries: number;

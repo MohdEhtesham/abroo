@@ -7,6 +7,7 @@ import {
   PlansScreen,
   SellerAnalyticsScreen,
   SellerHomeScreen,
+  SellerVisitsScreen,
 } from '../features/seller/screens';
 
 export type SellerStackParamList = {
@@ -14,6 +15,7 @@ export type SellerStackParamList = {
   MyListings: undefined;
   AddListing: undefined;
   Leads: { initialTab?: 'all' | 'new' | 'contacted' | 'visit_booked' | 'closed_won' | 'closed_lost' } | undefined;
+  SellerVisits: { initialTab?: 'upcoming' | 'completed' | 'cancelled' | 'all' } | undefined;
   Analytics: undefined;
   Plans: undefined;
 };
@@ -26,6 +28,7 @@ export const SellerHomeNavigator: React.FC = () => (
     <Stack.Screen name="AddListing" component={AddListingScreen} />
     <Stack.Screen name="MyListings" component={MyListingsScreen} />
     <Stack.Screen name="Leads" component={LeadsScreen} />
+    <Stack.Screen name="SellerVisits" component={SellerVisitsScreen} />
     <Stack.Screen name="Analytics" component={SellerAnalyticsScreen} />
     <Stack.Screen name="Plans" component={PlansScreen} />
   </Stack.Navigator>
@@ -42,6 +45,7 @@ export const SellerListingsNavigator: React.FC = () => (
 export const SellerLeadsNavigator: React.FC = () => (
   <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
     <Stack.Screen name="Leads" component={LeadsScreen} />
+    <Stack.Screen name="SellerVisits" component={SellerVisitsScreen} />
   </Stack.Navigator>
 );
 

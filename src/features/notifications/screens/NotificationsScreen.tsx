@@ -75,9 +75,11 @@ export const NotificationsScreen: React.FC = () => {
       }
     } else if (n.type === 'visit_reminder') {
       if (isSeller) {
+        // Sellers get a richer visit-management screen reachable from the
+        // SellerHome tab (registered there + on the Leads tab navigator).
         navigation.navigate('Main', {
-          screen: 'LeadsTab',
-          params: { screen: 'Leads', params: { initialTab: 'visit_booked' } },
+          screen: 'SellerHomeTab',
+          params: { screen: 'SellerVisits', params: { initialTab: 'upcoming' } },
         });
       } else {
         navigation.navigate('Main', {

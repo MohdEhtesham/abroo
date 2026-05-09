@@ -10,6 +10,8 @@ import type {
   SellerAnalytics,
   SellerLead,
   SellerListing,
+  SellerVisit,
+  SellerVisitStatus,
 } from '../types';
 
 let listings: SellerListing[] = [...MOCK_SELLER_LISTINGS];
@@ -90,6 +92,14 @@ const mock = {
     return mockResponse(leads.find(l => l.id === id) ?? null, 200);
   },
   analytics: () => mockResponse(computeAnalytics(), 600),
+  // Mock visits view: empty by default — production data will fill this in
+  // through the real backend endpoint. Sellers in mock mode just see no
+  // bookings yet, which matches the typical onboarding experience.
+  visits: (): Promise<SellerVisit[]> => mockResponse([], 200),
+  setVisitStatus: async (
+    _id: string,
+    _status: SellerVisitStatus,
+  ): Promise<SellerVisit | null> => mockResponse(null as SellerVisit | null, 200),
 };
 
 const real = {
@@ -106,6 +116,9 @@ const real = {
   setLeadStatus: (id: string, status: LeadStatus) =>
     apiPut<SellerLead | null>(`/seller/leads/${id}/status`, { status }),
   analytics: () => apiGet<SellerAnalytics>('/seller/analytics'),
+  visits: () => apiGet<SellerVisit[]>('/seller/visits'),
+  setVisitStatus: (id: string, status: SellerVisitStatus) =>
+    apiPut<SellerVisit | null>(`/seller/visits/${id}/status`, { status }),
 };
 
 export const sellerService = USE_MOCK ? mock : real;

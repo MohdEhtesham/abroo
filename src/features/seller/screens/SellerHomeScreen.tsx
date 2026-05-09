@@ -18,6 +18,7 @@ import {
   loadAnalyticsThunk,
   loadLeadsThunk,
   loadListingsThunk,
+  loadSellerVisitsThunk,
 } from '../../../store/slices/sellerSlice';
 import { useTheme } from '../../../theme';
 import { timeAgo } from '../../../utils/format';
@@ -27,17 +28,18 @@ export const SellerHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const user = useAppSelector(s => s.auth.user);
-  const { listings, leads, analytics } = useAppSelector(s => s.seller);
+  const { listings, leads, analytics, visits } = useAppSelector(s => s.seller);
 
   useEffect(() => {
     dispatch(loadListingsThunk());
     dispatch(loadLeadsThunk());
     dispatch(loadAnalyticsThunk());
+    dispatch(loadSellerVisitsThunk());
   }, [dispatch]);
 
   const live = listings.filter(l => l.status === 'live').length;
   const newLeads = leads.filter(l => l.status === 'new').length;
-  const visitBookings = leads.filter(l => l.status === 'visit_booked').length;
+  const upcomingVisits = visits.filter(v => v.status === 'upcoming').length;
   const recentLeads = leads.slice(0, 3);
   const seller = user?.seller;
 
@@ -113,10 +115,10 @@ export const SellerHomeScreen: React.FC = () => {
           </Pressable>
         </FadeSlideIn>
 
-        {visitBookings > 0 && (
+        {upcomingVisits > 0 && (
           <FadeSlideIn delay={260} style={{ paddingHorizontal: 20, marginTop: 14 }}>
             <Pressable
-              onPress={() => navigation.navigate('Leads', { initialTab: 'visit_booked' })}
+              onPress={() => navigation.navigate('SellerVisits', { initialTab: 'upcoming' })}
               style={[
                 styles.visitTile,
                 {
@@ -130,10 +132,10 @@ export const SellerHomeScreen: React.FC = () => {
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text weight="800" style={{ color: theme.colors.success }}>
-                  {visitBookings} site visit{visitBookings === 1 ? '' : 's'} booked
+                  {upcomingVisits} upcoming site visit{upcomingVisits === 1 ? '' : 's'}
                 </Text>
                 <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-                  Buyers scheduled visits on your listings — tap to review
+                  See who's coming, when, and how to reach them
                 </Text>
               </View>
               <Icon name="chevron-forward" size={20} color={theme.colors.success} />

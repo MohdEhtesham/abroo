@@ -6,11 +6,14 @@ import type {
   SellerAnalytics,
   SellerLead,
   SellerListing,
+  SellerVisit,
+  SellerVisitStatus,
 } from '../../features/seller/types';
 
 interface SellerState {
   listings: SellerListing[];
   leads: SellerLead[];
+  visits: SellerVisit[];
   analytics: SellerAnalytics | null;
   loading: boolean;
   submitting: boolean;
@@ -20,6 +23,7 @@ interface SellerState {
 const initialState: SellerState = {
   listings: [],
   leads: [],
+  visits: [],
   analytics: null,
   loading: false,
   submitting: false,
@@ -62,6 +66,16 @@ export const setLeadStatusThunk = createAsyncThunk(
 
 export const loadAnalyticsThunk = createAsyncThunk('seller/loadAnalytics', () =>
   sellerService.analytics(),
+);
+
+export const loadSellerVisitsThunk = createAsyncThunk('seller/loadVisits', () =>
+  sellerService.visits(),
+);
+
+export const setSellerVisitStatusThunk = createAsyncThunk(
+  'seller/setVisitStatus',
+  async (input: { id: string; status: SellerVisitStatus }) =>
+    sellerService.setVisitStatus(input.id, input.status),
 );
 
 const sellerSlice = createSlice({
@@ -114,6 +128,14 @@ const sellerSlice = createSlice({
       })
       .addCase(loadAnalyticsThunk.fulfilled, (s, a) => {
         s.analytics = a.payload;
+      })
+      .addCase(loadSellerVisitsThunk.fulfilled, (s, a) => {
+        s.visits = a.payload;
+      })
+      .addCase(setSellerVisitStatusThunk.fulfilled, (s, a) => {
+        if (a.payload) {
+          s.visits = s.visits.map(v => (v.id === a.payload!.id ? a.payload! : v));
+        }
       });
   },
 });

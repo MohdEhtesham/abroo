@@ -22,6 +22,7 @@ import {
   loadAnalyticsThunk,
   loadLeadsThunk,
   loadListingsThunk,
+  loadSellerVisitsThunk,
 } from '../../../store/slices/sellerSlice';
 import { loadVisitsThunk } from '../../../store/slices/visitSlice';
 import { useTheme, useThemeMode } from '../../../theme';
@@ -62,6 +63,7 @@ export const ProfileScreen: React.FC = () => {
         dispatch(loadListingsThunk());
         dispatch(loadLeadsThunk());
         dispatch(loadAnalyticsThunk());
+        dispatch(loadSellerVisitsThunk());
       } else {
         dispatch(loadInquiriesThunk());
         dispatch(loadVisitsThunk());
