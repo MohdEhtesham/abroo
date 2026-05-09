@@ -1,4 +1,10 @@
-import { DarkTheme, DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+  Theme,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { SplashScreen } from '../features/auth/screens';
@@ -10,8 +16,11 @@ import { BottomTabs } from './BottomTabs';
 import { ChatNavigator } from './ChatNavigator';
 import { InquiryNavigator } from './InquiryNavigator';
 import { NotificationsNavigator } from './NotificationsNavigator';
+import { IncomingCallOverlay } from '../features/visits/components/IncomingCallOverlay';
 import { VideoCallScreen } from '../features/visits/screens/VideoCallScreen';
 import type { AuthStackParamList, RootStackParamList } from './types';
+
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -59,7 +68,7 @@ export const RootNavigator: React.FC = () => {
   const AuthWrapped = () => <AuthNavigator initialRoute={authInitialRoute} />;
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthWrapped} />
@@ -89,6 +98,9 @@ export const RootNavigator: React.FC = () => {
           </>
         )}
       </Stack.Navigator>
+      {/* App-wide ring listener — only renders an overlay when an
+          incoming-call event arrives. */}
+      {isAuthenticated && <IncomingCallOverlay />}
     </NavigationContainer>
   );
 };

@@ -90,7 +90,15 @@ export const VideoCallScreen: React.FC = () => {
   const teardownRef = useRef<() => void>(() => {});
 
   const teardown = useCallback(() => {
-    try { socketRef.current?.emit('leave', { visitId }); } catch {}
+    try {
+      // If we never connected to a peer, we're the caller bailing out —
+      // tell the server to dismiss the incoming-call overlay on the
+      // other side. If a peer already joined, `leave` is enough.
+      if (!peerSocketIdRef.current) {
+        socketRef.current?.emit('cancel-call', { visitId });
+      }
+      socketRef.current?.emit('leave', { visitId });
+    } catch {}
     try { socketRef.current?.disconnect(); } catch {}
     socketRef.current = null;
 
@@ -287,6 +295,13 @@ export const VideoCallScreen: React.FC = () => {
       socket.on('error', payload => {
         Alert.alert('Call error', payload?.message ?? 'Connection error');
         setState('failed');
+      });
+
+      socket.on('call-declined', () => {
+        Alert.alert('Call declined', 'The other side declined the call.');
+        setState('ended');
+        teardownRef.current();
+        navigation.goBack();
       });
 
       socket.on('connect_error', err => {
