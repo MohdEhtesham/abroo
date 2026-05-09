@@ -9,6 +9,7 @@ import type {
   SellerVisit,
   SellerVisitStatus,
 } from '../../features/seller/types';
+import { getErrorMessage } from '../../utils/apiError';
 
 interface SellerState {
   listings: SellerListing[];
@@ -36,21 +37,40 @@ export const loadListingsThunk = createAsyncThunk('seller/loadListings', () =>
 
 export const createListingThunk = createAsyncThunk(
   'seller/createListing',
-  async (input: { draft: Parameters<typeof sellerService.createListing>[0]; ownerId: string }) =>
-    sellerService.createListing(input.draft, input.ownerId),
+  async (
+    input: { draft: Parameters<typeof sellerService.createListing>[0]; ownerId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      return await sellerService.createListing(input.draft, input.ownerId);
+    } catch (e) {
+      return rejectWithValue(
+        getErrorMessage(e, 'Could not post your listing. Please try again.'),
+      );
+    }
+  },
 );
 
 export const setListingStatusThunk = createAsyncThunk(
   'seller/setListingStatus',
-  async (input: { id: string; status: ListingStatus }) =>
-    sellerService.setStatus(input.id, input.status),
+  async (input: { id: string; status: ListingStatus }, { rejectWithValue }) => {
+    try {
+      return await sellerService.setStatus(input.id, input.status);
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not update the listing status.'));
+    }
+  },
 );
 
 export const deleteListingThunk = createAsyncThunk(
   'seller/deleteListing',
-  async (id: string) => {
-    await sellerService.deleteListing(id);
-    return id;
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await sellerService.deleteListing(id);
+      return id;
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not delete the listing.'));
+    }
   },
 );
 
@@ -60,8 +80,13 @@ export const loadLeadsThunk = createAsyncThunk('seller/loadLeads', () =>
 
 export const setLeadStatusThunk = createAsyncThunk(
   'seller/setLeadStatus',
-  async (input: { id: string; status: LeadStatus }) =>
-    sellerService.setLeadStatus(input.id, input.status),
+  async (input: { id: string; status: LeadStatus }, { rejectWithValue }) => {
+    try {
+      return await sellerService.setLeadStatus(input.id, input.status);
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not update the lead status.'));
+    }
+  },
 );
 
 export const loadAnalyticsThunk = createAsyncThunk('seller/loadAnalytics', () =>
@@ -74,8 +99,13 @@ export const loadSellerVisitsThunk = createAsyncThunk('seller/loadVisits', () =>
 
 export const setSellerVisitStatusThunk = createAsyncThunk(
   'seller/setVisitStatus',
-  async (input: { id: string; status: SellerVisitStatus }) =>
-    sellerService.setVisitStatus(input.id, input.status),
+  async (input: { id: string; status: SellerVisitStatus }, { rejectWithValue }) => {
+    try {
+      return await sellerService.setVisitStatus(input.id, input.status);
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not update the visit status.'));
+    }
+  },
 );
 
 const sellerSlice = createSlice({
@@ -104,7 +134,7 @@ const sellerSlice = createSlice({
       })
       .addCase(createListingThunk.rejected, (s, a) => {
         s.submitting = false;
-        s.error = a.error.message ?? null;
+        s.error = (a.payload as string) ?? a.error.message ?? null;
       })
       .addCase(setListingStatusThunk.fulfilled, (s, a) => {
         if (a.payload) {

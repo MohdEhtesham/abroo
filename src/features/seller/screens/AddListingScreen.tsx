@@ -217,6 +217,15 @@ export const AddListingScreen: React.FC = () => {
       Alert.alert('Listing posted!', 'Your property is now live on Aabroo.', [
         { text: 'View Listings', onPress: () => navigation.replace('MyListings') },
       ]);
+    } else {
+      // Surface the actual server reason (e.g. "Listing quota exceeded —
+      // upgrade your plan", "Title is required", offline / timeout) instead
+      // of silently bouncing the user back. The thunk's rejected payload is
+      // the friendly message produced by getErrorMessage.
+      const reason =
+        (action.payload as string | undefined) ??
+        'Could not post your listing. Please try again.';
+      Alert.alert('Could not post listing', reason);
     }
   };
 

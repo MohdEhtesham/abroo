@@ -84,9 +84,15 @@ export const MyListingsScreen: React.FC = () => {
     return listings.filter(l => l.status === tab);
   }, [listings, tab]);
 
-  const onAction = (id: string, status: ListingStatus, currentStatus: ListingStatus) => {
+  const onAction = async (id: string, status: ListingStatus, currentStatus: ListingStatus) => {
     const next: ListingStatus = currentStatus === 'live' ? 'paused' : 'live';
-    dispatch(setListingStatusThunk({ id, status: next }));
+    const action = await dispatch(setListingStatusThunk({ id, status: next }));
+    if (setListingStatusThunk.rejected.match(action)) {
+      Alert.alert(
+        'Could not update listing',
+        (action.payload as string | undefined) ?? 'Please try again.',
+      );
+    }
   };
 
   const onDelete = (id: string) => {
@@ -96,8 +102,15 @@ export const MyListingsScreen: React.FC = () => {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await dispatch(deleteListingThunk(id));
-          dispatch(decrementListingQuota());
+          const action = await dispatch(deleteListingThunk(id));
+          if (deleteListingThunk.fulfilled.match(action)) {
+            dispatch(decrementListingQuota());
+          } else {
+            Alert.alert(
+              'Could not delete listing',
+              (action.payload as string | undefined) ?? 'Please try again.',
+            );
+          }
         },
       },
     ]);

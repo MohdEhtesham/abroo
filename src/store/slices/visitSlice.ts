@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { visitService } from '../../features/visits/services/visitService';
 import type { Visit } from '../../features/visits/types';
+import { getErrorMessage } from '../../utils/apiError';
 
 interface VisitState {
   list: Visit[];
@@ -20,14 +21,26 @@ export const loadVisitsThunk = createAsyncThunk('visit/load', () => visitService
 
 export const scheduleVisitThunk = createAsyncThunk(
   'visit/schedule',
-  async (input: Parameters<typeof visitService.create>[0]) => visitService.create(input),
+  async (input: Parameters<typeof visitService.create>[0], { rejectWithValue }) => {
+    try {
+      return await visitService.create(input);
+    } catch (e) {
+      return rejectWithValue(
+        getErrorMessage(e, 'Could not schedule your visit. Please try again.'),
+      );
+    }
+  },
 );
 
 export const cancelVisitThunk = createAsyncThunk(
   'visit/cancel',
-  async (id: string) => {
-    await visitService.cancel(id);
-    return id;
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await visitService.cancel(id);
+      return id;
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not cancel the visit.'));
+    }
   },
 );
 
@@ -53,7 +66,7 @@ const visitSlice = createSlice({
       })
       .addCase(scheduleVisitThunk.rejected, (state, action) => {
         state.scheduling = false;
-        state.error = action.error.message ?? null;
+        state.error = (action.payload as string) ?? action.error.message ?? null;
       })
       .addCase(cancelVisitThunk.fulfilled, (state, action) => {
         state.list = state.list.map(v => (v.id === action.payload ? { ...v, status: 'cancelled' } : v));

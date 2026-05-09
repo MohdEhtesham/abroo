@@ -2,7 +2,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StyleSheet, View } from 'react-native';
 import {
   AnimatedHeader,
   Card,
@@ -61,6 +61,11 @@ export const InquiryFormScreen: React.FC = () => {
     );
     if (submitInquiryThunk.fulfilled.match(action)) {
       navigation.replace('InquirySuccess', { inquiryId: action.payload.id });
+    } else {
+      const reason =
+        (action.payload as string | undefined) ??
+        'Could not submit your inquiry. Please try again.';
+      Alert.alert('Could not submit inquiry', reason);
     }
   };
 

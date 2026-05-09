@@ -73,6 +73,11 @@ export const ScheduleVisitScreen: React.FC = () => {
         { text: 'View Visits', onPress: () => navigation.navigate('UpcomingVisits') },
         { text: 'Done', style: 'cancel', onPress: () => navigation.popToTop() },
       ]);
+    } else {
+      const reason =
+        (action.payload as string | undefined) ??
+        'Could not schedule your visit. Please try again.';
+      Alert.alert('Could not book visit', reason);
     }
   };
 

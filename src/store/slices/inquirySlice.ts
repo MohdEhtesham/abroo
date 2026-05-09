@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { inquiryService } from '../../features/inquiry/services/inquiryService';
 import type { Inquiry } from '../../features/inquiry/types';
+import { getErrorMessage } from '../../utils/apiError';
 
 interface InquiryState {
   list: Inquiry[];
@@ -20,7 +21,15 @@ export const loadInquiriesThunk = createAsyncThunk('inquiry/load', () => inquiry
 
 export const submitInquiryThunk = createAsyncThunk(
   'inquiry/submit',
-  async (input: Parameters<typeof inquiryService.create>[0]) => inquiryService.create(input),
+  async (input: Parameters<typeof inquiryService.create>[0], { rejectWithValue }) => {
+    try {
+      return await inquiryService.create(input);
+    } catch (e) {
+      return rejectWithValue(
+        getErrorMessage(e, 'Could not submit your inquiry. Please try again.'),
+      );
+    }
+  },
 );
 
 const inquirySlice = createSlice({
@@ -49,7 +58,7 @@ const inquirySlice = createSlice({
       })
       .addCase(submitInquiryThunk.rejected, (state, action) => {
         state.submitting = false;
-        state.error = action.error.message ?? null;
+        state.error = (action.payload as string) ?? action.error.message ?? null;
       });
   },
 });

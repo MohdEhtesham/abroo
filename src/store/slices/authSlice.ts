@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../features/auth/services/authService';
 import type { AuthState, SellerPlan, User, UserPreferences, UserRole } from '../../features/auth/types';
 import { setAuthToken } from '../../services/apiClient';
+import { getErrorMessage } from '../../utils/apiError';
 import { storage } from '../../utils/storage';
 
 interface ExtendedAuthState extends AuthState {
@@ -41,7 +42,10 @@ export const loginThunk = createAsyncThunk(
       const res = await authService.login(creds.identifier, creds.password, creds.role ?? 'consumer');
       return res;
     } catch (e) {
-      return rejectWithValue('Invalid credentials');
+      // Surface the server's actual reason (wrong password, account not found,
+      // role mismatch) rather than a generic blanket. Falls back to a friendly
+      // default only if the error has no message.
+      return rejectWithValue(getErrorMessage(e, 'Could not sign you in. Please try again.'));
     }
   },
 );
@@ -55,7 +59,7 @@ export const signupThunk = createAsyncThunk(
     try {
       return await authService.signup(data);
     } catch (e) {
-      return rejectWithValue('Signup failed');
+      return rejectWithValue(getErrorMessage(e, 'Could not create your account. Please try again.'));
     }
   },
 );
@@ -65,10 +69,10 @@ export const verifyOtpThunk = createAsyncThunk(
   async (input: { phone: string; otp: string; role?: UserRole }, { rejectWithValue }) => {
     try {
       const res = await authService.verifyOtp(input.phone, input.otp, input.role ?? 'consumer');
-      if (!res.valid) return rejectWithValue('Invalid OTP');
+      if (!res.valid) return rejectWithValue('That OTP did not match. Please double-check and try again.');
       return res;
     } catch (e) {
-      return rejectWithValue('OTP verification failed');
+      return rejectWithValue(getErrorMessage(e, 'Could not verify the OTP. Please try again.'));
     }
   },
 );
@@ -90,8 +94,8 @@ export const deleteAccountThunk = createAsyncThunk(
       await authService.deleteAccount();
       await storage.clearAuth();
       return true;
-    } catch (e: any) {
-      return rejectWithValue(e?.message ?? 'Failed to delete account');
+    } catch (e) {
+      return rejectWithValue(getErrorMessage(e, 'Could not delete your account. Please try again.'));
     }
   },
 );
