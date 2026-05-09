@@ -134,13 +134,13 @@ export const SignupScreen: React.FC = () => {
                   {
                     value: 'consumer' as UserRole,
                     label: 'Buyer',
-                    desc: 'Discover & inquire',
-                    icon: 'search',
+                    desc: 'Find your dream home',
+                    icon: 'home',
                   },
                   {
                     value: 'seller' as UserRole,
                     label: 'Seller',
-                    desc: 'List & reach buyers',
+                    desc: 'List & sell properties',
                     icon: 'business',
                   },
                 ]
@@ -150,45 +150,51 @@ export const SignupScreen: React.FC = () => {
                   <Pressable
                     key={opt.value}
                     onPress={() => setRole(opt.value)}
-                    style={[
-                      styles.roleCard,
-                      {
-                        backgroundColor: active
-                          ? theme.colors.primary + '0F'
-                          : theme.colors.surfaceElevated,
-                        borderColor: active ? theme.colors.primary : theme.colors.border,
-                      },
-                    ]}
+                    style={styles.roleCardWrap}
                   >
-                    <View
-                      style={[
-                        styles.roleIcon,
-                        {
-                          backgroundColor: active ? theme.colors.primary : theme.colors.divider,
-                        },
-                      ]}
-                    >
-                      <Icon
-                        name={(active ? opt.icon : `${opt.icon}-outline`) as any}
-                        size={20}
-                        color={active ? '#fff' : theme.colors.text}
-                      />
-                    </View>
-                    <Text
-                      weight="800"
-                      style={{
-                        marginTop: 10,
-                        color: active ? theme.colors.primary : theme.colors.text,
-                      }}
-                    >
-                      {opt.label}
-                    </Text>
-                    <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-                      {opt.desc}
-                    </Text>
-                    {active && (
-                      <View style={[styles.checkmark, { backgroundColor: theme.colors.primary }]}>
-                        <Icon name="checkmark" size={12} color="#fff" />
+                    {active ? (
+                      <LinearGradient
+                        colors={[theme.colors.primary, theme.colors.primaryDark]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[styles.roleCard, styles.roleCardActive]}
+                      >
+                        <View style={styles.roleCardCheck}>
+                          <Icon name="checkmark" size={12} color={theme.colors.primary} />
+                        </View>
+                        <View style={[styles.roleIconChip, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
+                          <Icon name={opt.icon as any} size={20} color="#fff" />
+                        </View>
+                        <Text weight="800" style={{ color: '#fff', fontSize: 15, marginTop: 8 }}>
+                          {opt.label}
+                        </Text>
+                        <Text
+                          variant="caption"
+                          style={{ color: 'rgba(255,255,255,0.85)', marginTop: 2, textAlign: 'center' }}
+                        >
+                          {opt.desc}
+                        </Text>
+                      </LinearGradient>
+                    ) : (
+                      <View
+                        style={[
+                          styles.roleCard,
+                          {
+                            backgroundColor: theme.colors.surfaceElevated,
+                            borderColor: theme.colors.border,
+                            borderWidth: 1,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.roleIconChip, { backgroundColor: theme.colors.primary + '14' }]}>
+                          <Icon name={`${opt.icon}-outline` as any} size={20} color={theme.colors.primary} />
+                        </View>
+                        <Text weight="700" style={{ marginTop: 8, fontSize: 15, color: theme.colors.text }}>
+                          {opt.label}
+                        </Text>
+                        <Text variant="caption" color="textMuted" style={{ marginTop: 2, textAlign: 'center' }}>
+                          {opt.desc}
+                        </Text>
                       </View>
                     )}
                   </Pressable>
@@ -350,26 +356,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
-  roleCard: {
+  roleCardWrap: {
     flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
   },
-  roleIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  roleCard: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 102,
+    overflow: 'hidden',
+  },
+  roleCardActive: {
+    shadowColor: '#1d4ed8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  roleCardCheck: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkmark: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  roleIconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -169,19 +169,21 @@ export const LoginScreen: React.FC = () => {
             <Text variant="caption" weight="700" color="textMuted" style={styles.fieldLabel}>
               I AM A
             </Text>
-            <View
-              style={[
-                styles.roleSwitch,
-                {
-                  backgroundColor: theme.colors.surfaceElevated,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
+            <View style={styles.roleRow}>
               {(
                 [
-                  { value: 'consumer' as UserRole, label: 'Buyer', icon: 'search' },
-                  { value: 'seller' as UserRole, label: 'Seller', icon: 'business' },
+                  {
+                    value: 'consumer' as UserRole,
+                    label: 'Buyer',
+                    tagline: 'Find your dream home',
+                    icon: 'home',
+                  },
+                  {
+                    value: 'seller' as UserRole,
+                    label: 'Seller',
+                    tagline: 'List & sell properties',
+                    icon: 'business',
+                  },
                 ]
               ).map(opt => {
                 const active = role === opt.value;
@@ -189,25 +191,47 @@ export const LoginScreen: React.FC = () => {
                   <Pressable
                     key={opt.value}
                     onPress={() => setRole(opt.value)}
-                    style={styles.roleTab}
+                    style={styles.roleCardWrap}
                   >
                     {active ? (
                       <LinearGradient
                         colors={[theme.colors.primary, theme.colors.primaryDark]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={styles.roleTabActive}
+                        style={[styles.roleCard, styles.roleCardActive]}
                       >
-                        <Icon name={opt.icon as any} size={16} color="#fff" />
-                        <Text weight="700" style={{ color: '#fff', marginLeft: 8 }}>
+                        <View style={styles.roleCardCheck}>
+                          <Icon name="checkmark" size={12} color={theme.colors.primary} />
+                        </View>
+                        <View style={[styles.roleIconChip, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
+                          <Icon name={opt.icon as any} size={20} color="#fff" />
+                        </View>
+                        <Text weight="800" style={{ color: '#fff', fontSize: 15, marginTop: 8 }}>
                           {opt.label}
+                        </Text>
+                        <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 2, textAlign: 'center' }}>
+                          {opt.tagline}
                         </Text>
                       </LinearGradient>
                     ) : (
-                      <View style={styles.roleTabInner}>
-                        <Icon name={`${opt.icon}-outline` as any} size={16} color={theme.colors.textMuted} />
-                        <Text weight="600" style={{ marginLeft: 8, color: theme.colors.textMuted }}>
+                      <View
+                        style={[
+                          styles.roleCard,
+                          {
+                            backgroundColor: theme.colors.surfaceElevated,
+                            borderColor: theme.colors.border,
+                            borderWidth: 1,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.roleIconChip, { backgroundColor: theme.colors.primary + '14' }]}>
+                          <Icon name={`${opt.icon}-outline` as any} size={20} color={theme.colors.primary} />
+                        </View>
+                        <Text weight="700" style={{ marginTop: 8, fontSize: 15, color: theme.colors.text }}>
                           {opt.label}
+                        </Text>
+                        <Text variant="caption" color="textMuted" style={{ marginTop: 2, textAlign: 'center' }}>
+                          {opt.tagline}
                         </Text>
                       </View>
                     )}
@@ -421,27 +445,44 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 8,
   },
-  roleSwitch: {
+  roleRow: {
     flexDirection: 'row',
-    padding: 4,
-    borderRadius: 14,
-    borderWidth: 1,
+    gap: 10,
   },
-  roleTab: {
+  roleCardWrap: {
     flex: 1,
-    height: 44,
-    borderRadius: 10,
+  },
+  roleCard: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 102,
     overflow: 'hidden',
   },
-  roleTabActive: {
-    flex: 1,
-    flexDirection: 'row',
+  roleCardActive: {
+    shadowColor: '#1d4ed8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  roleCardCheck: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  roleTabInner: {
-    flex: 1,
-    flexDirection: 'row',
+  roleIconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
