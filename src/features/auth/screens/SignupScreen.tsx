@@ -125,9 +125,17 @@ export const SignupScreen: React.FC = () => {
         >
           <KeyboardScreen contentContainerStyle={{ paddingBottom: 30 }}>
             <Animated.View style={roleEntry}>
-            <Text variant="caption" weight="700" color="textMuted" style={styles.fieldLabel}>
-              I AM A
-            </Text>
+            <View style={styles.roleHeadRow}>
+              <View style={[styles.roleHeadAccent, { backgroundColor: theme.colors.primary }]} />
+              <View style={{ flex: 1 }}>
+                <Text weight="800" style={{ fontSize: 17, letterSpacing: -0.3 }}>
+                  I'm a…
+                </Text>
+                <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+                  Pick the one that fits your goal
+                </Text>
+              </View>
+            </View>
             <View style={styles.roleRow}>
               {(
                 [
@@ -351,6 +359,17 @@ const styles = StyleSheet.create({
   fieldLabel: {
     letterSpacing: 0.6,
     marginBottom: 10,
+  },
+  roleHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roleHeadAccent: {
+    width: 4,
+    height: 32,
+    borderRadius: 2,
+    marginRight: 10,
   },
   roleRow: {
     flexDirection: 'row',
