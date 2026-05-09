@@ -6,10 +6,13 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {
   Avatar,
   Card,
+  CountUp,
+  FadeSlideIn,
   Screen,
   SectionHeader,
   Text,
 } from '../../../components';
+import { UpgradeProCard } from '../components/UpgradeProCard';
 import { useAppDispatch, useAppSelector } from '../../../store';
 import {
   loadAnalyticsThunk,
@@ -77,15 +80,15 @@ export const SellerHomeScreen: React.FC = () => {
           </Text>
 
           <View style={styles.kpisRow}>
-            <Kpi icon="eye" label="Views" value={analytics?.totalViews ?? 0} />
+            <Kpi icon="eye" label="Views" value={analytics?.totalViews ?? 0} delay={120} />
             <View style={styles.kpiDiv} />
-            <Kpi icon="document-text" label="Inquiries" value={analytics?.totalInquiries ?? 0} />
+            <Kpi icon="document-text" label="Inquiries" value={analytics?.totalInquiries ?? 0} delay={200} />
             <View style={styles.kpiDiv} />
-            <Kpi icon="call" label="Callbacks" value={analytics?.totalCallbacks ?? 0} />
+            <Kpi icon="call" label="Callbacks" value={analytics?.totalCallbacks ?? 0} delay={280} />
           </View>
         </LinearGradient>
 
-        <View style={{ paddingHorizontal: 20, marginTop: -40 }}>
+        <FadeSlideIn delay={220} style={{ paddingHorizontal: 20, marginTop: -40 }}>
           <Pressable onPress={() => navigation.navigate('AddListing')}>
             <LinearGradient
               colors={[theme.colors.accent, theme.colors.accentDark]}
@@ -107,35 +110,44 @@ export const SellerHomeScreen: React.FC = () => {
               <Icon name="arrow-forward" size={22} color="#fff" />
             </LinearGradient>
           </Pressable>
-        </View>
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={300}>
         <SectionHeader
           title="Quick actions"
           style={{ marginTop: 20 }}
         />
         <View style={{ paddingHorizontal: 20, flexDirection: 'row', gap: 10 }}>
-          <QuickAction
-            icon="business-outline"
-            label="My Listings"
-            count={listings.length}
-            onPress={() => navigation.navigate('MyListings')}
-          />
-          <QuickAction
-            icon="people-outline"
-            label="Leads"
-            count={leads.length}
-            badge={newLeads > 0 ? newLeads : undefined}
-            onPress={() => navigation.navigate('Leads')}
-          />
-          <QuickAction
-            icon="bar-chart-outline"
-            label="Analytics"
-            count={analytics?.conversionRate ? `${analytics.conversionRate}%` : '—'}
-            countLabel="conv."
-            onPress={() => navigation.navigate('Analytics')}
-          />
+          <FadeSlideIn delay={340} style={{ flex: 1 }}>
+            <QuickAction
+              icon="business-outline"
+              label="My Listings"
+              count={listings.length}
+              onPress={() => navigation.navigate('MyListings')}
+            />
+          </FadeSlideIn>
+          <FadeSlideIn delay={380} style={{ flex: 1 }}>
+            <QuickAction
+              icon="people-outline"
+              label="Leads"
+              count={leads.length}
+              badge={newLeads > 0 ? newLeads : undefined}
+              onPress={() => navigation.navigate('Leads')}
+            />
+          </FadeSlideIn>
+          <FadeSlideIn delay={420} style={{ flex: 1 }}>
+            <QuickAction
+              icon="bar-chart-outline"
+              label="Analytics"
+              count={analytics?.conversionRate ? `${analytics.conversionRate}%` : '—'}
+              countLabel="conv."
+              onPress={() => navigation.navigate('Analytics')}
+            />
+          </FadeSlideIn>
         </View>
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={460}>
         <SectionHeader
           title="Recent leads"
           actionLabel={leads.length > 0 ? 'See all' : undefined}
@@ -150,59 +162,55 @@ export const SellerHomeScreen: React.FC = () => {
               </Text>
             </Card>
           ) : (
-            recentLeads.map(l => (
-              <Card key={l.id} style={{ marginBottom: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Avatar name={l.consumerName} size={42} />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text weight="700">{l.consumerName}</Text>
-                    <Text variant="caption" color="textMuted" numberOfLines={1}>
-                      {l.listingTitle} · {timeAgo(l.createdAt)}
-                    </Text>
+            recentLeads.map((l, i) => (
+              <FadeSlideIn key={l.id} delay={500 + i * 50}>
+                <Card
+                  style={{ marginBottom: 10 }}
+                  onPress={() => navigation.navigate('Leads')}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Avatar name={l.consumerName} size={42} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text weight="700">{l.consumerName}</Text>
+                      <Text variant="caption" color="textMuted" numberOfLines={1}>
+                        {l.listingTitle} · {timeAgo(l.createdAt)}
+                      </Text>
+                    </View>
+                    <Icon name="chevron-forward" size={18} color={theme.colors.textMuted} />
                   </View>
-                  <Icon name="chevron-forward" size={18} color={theme.colors.textMuted} />
-                </View>
-              </Card>
+                </Card>
+              </FadeSlideIn>
             ))
           )}
         </View>
+        </FadeSlideIn>
 
         {seller?.plan === 'free' && (
-          <View style={{ paddingHorizontal: 20, marginTop: 22 }}>
-            <Pressable onPress={() => navigation.navigate('Plans')}>
-              <LinearGradient
-                colors={['#1F2940', theme.colors.primaryDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.upgradeCard}
-              >
-                <View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Icon name="rocket" size={18} color={theme.colors.accent} />
-                    <Text weight="800" style={{ color: '#fff', marginLeft: 6, fontSize: 17 }}>
-                      Upgrade to Pro
-                    </Text>
-                  </View>
-                  <Text variant="bodySm" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>
-                    Unlimited listings · Featured placement · 3.4x more leads
-                  </Text>
-                </View>
-                <Icon name="arrow-forward" size={20} color="#fff" />
-              </LinearGradient>
-            </Pressable>
-          </View>
+          <FadeSlideIn delay={700} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+            <UpgradeProCard onPress={() => navigation.navigate('Plans')} />
+          </FadeSlideIn>
         )}
       </ScrollView>
     </Screen>
   );
 };
 
-const Kpi: React.FC<{ icon: string; label: string; value: number }> = ({ icon, label, value }) => (
+const Kpi: React.FC<{ icon: string; label: string; value: number; delay?: number }> = ({
+  icon,
+  label,
+  value,
+  delay = 0,
+}) => (
   <View style={{ flex: 1, alignItems: 'center' }}>
     <Icon name={icon as any} size={16} color="rgba(255,255,255,0.85)" />
-    <Text variant="h3" weight="800" style={{ color: '#fff', marginTop: 4 }}>
-      {value.toLocaleString()}
-    </Text>
+    <CountUp
+      to={value}
+      duration={1200}
+      delay={delay}
+      variant="h3"
+      weight="800"
+      style={{ color: '#fff', marginTop: 4 } as any}
+    />
     <Text variant="caption" style={{ color: 'rgba(255,255,255,0.75)' }}>
       {label}
     </Text>
@@ -316,12 +324,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  upgradeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 16,
   },
 });

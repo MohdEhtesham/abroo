@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar,
   Card,
+  FadeSlideIn,
   ImageCarousel,
   PropertyCard,
   Screen,
@@ -128,6 +129,7 @@ export const PropertyDetailScreen: React.FC = () => {
             </Text>
           </View>
 
+          <FadeSlideIn delay={120}>
           <Card elevated={false} style={[styles.priceCard, { backgroundColor: theme.colors.primary }]}>
             <View>
               <Text variant="caption" style={{ color: 'rgba(255,255,255,0.8)' }}>Starting at</Text>
@@ -146,18 +148,23 @@ export const PropertyDetailScreen: React.FC = () => {
               </Text>
             </View>
           </Card>
+          </FadeSlideIn>
 
+          <FadeSlideIn delay={220}>
           <View style={styles.statsRow}>
             <Stat label="Configuration" value={property.configuration.join(' / ')} />
             <Stat label="Area" value={`${formatArea(property.areaMin)}+`} />
             <Stat label="Towers" value={property.totalTowers > 0 ? String(property.totalTowers) : '—'} />
             <Stat label="Units" value={property.totalUnits.toLocaleString()} />
           </View>
+          </FadeSlideIn>
 
+          <FadeSlideIn delay={320}>
           <SectionHeader title="About this property" style={{ paddingHorizontal: 0 }} />
           <Text variant="body" color="textSecondary" style={{ lineHeight: 22 }}>
             {property.description}
           </Text>
+          </FadeSlideIn>
 
           {property.highlights.length > 0 && (
             <>

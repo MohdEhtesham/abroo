@@ -26,10 +26,16 @@ export const SellerAnalyticsScreen: React.FC = () => {
     dispatch(loadAnalyticsThunk());
   }, [dispatch]);
 
+  const headerProps = {
+    title: 'Analytics',
+    showBack: navigation.canGoBack(),
+    onBackPress: () => navigation.goBack(),
+  };
+
   if (!analytics) {
     return (
       <Screen edges={['top']}>
-        <AnimatedHeader title="Analytics" showBack={false} />
+        <AnimatedHeader {...headerProps} />
       </Screen>
     );
   }
@@ -38,7 +44,7 @@ export const SellerAnalyticsScreen: React.FC = () => {
 
   return (
     <Screen edges={['top']}>
-      <AnimatedHeader title="Analytics" showBack={false} />
+      <AnimatedHeader {...headerProps} />
       <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
         <View style={{ paddingHorizontal: 20 }}>
           <View style={styles.kpiGrid}>

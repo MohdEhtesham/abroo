@@ -36,7 +36,11 @@ export const MyInquiriesScreen: React.FC = () => {
 
   return (
     <Screen edges={['top']}>
-      <AnimatedHeader title="My Inquiries" showBack={false} />
+      <AnimatedHeader
+        title="My Inquiries"
+        showBack={navigation.canGoBack()}
+        onBackPress={() => navigation.goBack()}
+      />
       {loading && list.length === 0 ? (
         <View style={{ paddingHorizontal: 20 }}>
           {[1, 2, 3].map(i => (

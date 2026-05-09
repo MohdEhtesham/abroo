@@ -102,7 +102,11 @@ export const MyListingsScreen: React.FC = () => {
 
   return (
     <Screen edges={['top']}>
-      <AnimatedHeader title="My Listings" showBack={false} />
+      <AnimatedHeader
+        title="My Listings"
+        showBack={navigation.canGoBack()}
+        onBackPress={() => navigation.goBack()}
+      />
 
       {seller && (
         <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 }}>

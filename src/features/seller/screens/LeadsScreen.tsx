@@ -88,7 +88,11 @@ export const LeadsScreen: React.FC = () => {
 
   return (
     <Screen edges={['top']}>
-      <AnimatedHeader title="Leads" showBack={false} />
+      <AnimatedHeader
+        title="Leads"
+        showBack={navigation.canGoBack()}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
         <Card padding={14}>

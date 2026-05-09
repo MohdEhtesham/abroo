@@ -16,3 +16,5 @@ export * from './TimelineTracker';
 export * from './Avatar';
 export * from './Chip';
 export * from './Card';
+export * from './CountUp';
+export * from './FadeSlideIn';

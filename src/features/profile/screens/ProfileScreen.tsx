@@ -7,6 +7,7 @@ import {
   Avatar,
   BottomSheet,
   Card,
+  CountUp,
   GradientButton,
   Screen,
   SectionHeader,
@@ -118,11 +119,11 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={styles.statsCard}>
           <Card style={[styles.stats, { borderColor: theme.colors.border }]} padding={0}>
-            <Stat label="Inquiries" value={inquiriesCount} />
+            <Stat label="Inquiries" value={inquiriesCount} delay={120} />
             <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
-            <Stat label="Visits" value={visitsCount} />
+            <Stat label="Visits" value={visitsCount} delay={180} />
             <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
-            <Stat label="Saved" value={savedCount} />
+            <Stat label="Saved" value={savedCount} delay={240} />
           </Card>
         </View>
 
@@ -248,9 +249,13 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const Stat: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+const Stat: React.FC<{ label: string; value: number; delay?: number }> = ({
+  label,
+  value,
+  delay = 0,
+}) => (
   <View style={statStyles.stat}>
-    <Text variant="h3" weight="800">{value}</Text>
+    <CountUp to={value} delay={delay} duration={700} variant="h3" weight="800" />
     <Text variant="caption" color="textMuted">{label}</Text>
   </View>
 );

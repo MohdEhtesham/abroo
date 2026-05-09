@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar,
+  FadeSlideIn,
   FeaturedCarousel,
   PropertyCard,
   PropertyCardSkeleton,
@@ -90,20 +91,21 @@ export const HomeScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={{ marginTop: 18 }}>
+          <FadeSlideIn delay={60} style={{ marginTop: 18 }}>
             <Text variant="h2" weight="800" style={{ color: '#fff', letterSpacing: -0.3 }}>
               Find your dream home
             </Text>
             <Text variant="bodySm" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>
               From curated, premium listings across India
             </Text>
-          </View>
+          </FadeSlideIn>
 
-          <View style={{ marginTop: 18 }}>
+          <FadeSlideIn delay={140} style={{ marginTop: 18 }}>
             <SearchBar onPress={goSearch} editable={false} />
-          </View>
+          </FadeSlideIn>
         </LinearGradient>
 
+        <FadeSlideIn delay={200}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -136,29 +138,34 @@ export const HomeScreen: React.FC = () => {
             </Pressable>
           ))}
         </ScrollView>
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={260}>
         <SectionHeader title="Browse by category" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.catRow}
         >
-          {PROPERTY_TYPES.map(t => (
-            <Pressable
-              key={t.id}
-              style={[styles.catCard, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
-              onPress={() =>
-                navigation.navigate('PropertyStack', { screen: 'PropertyList', params: { type: t.id, title: t.label } })
-              }
-            >
-              <View style={[styles.catIcon, { backgroundColor: theme.colors.primary + '14' }]}>
-                <Icon name={t.icon as any} size={22} color={theme.colors.primary} />
-              </View>
-              <Text variant="bodySm" weight="700" style={{ marginTop: 8 }}>{t.label}</Text>
-            </Pressable>
+          {PROPERTY_TYPES.map((t, i) => (
+            <FadeSlideIn key={t.id} delay={300 + i * 35}>
+              <Pressable
+                style={[styles.catCard, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                onPress={() =>
+                  navigation.navigate('PropertyStack', { screen: 'PropertyList', params: { type: t.id, title: t.label } })
+                }
+              >
+                <View style={[styles.catIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+                  <Icon name={t.icon as any} size={22} color={theme.colors.primary} />
+                </View>
+                <Text variant="bodySm" weight="700" style={{ marginTop: 8 }}>{t.label}</Text>
+              </Pressable>
+            </FadeSlideIn>
           ))}
         </ScrollView>
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={380}>
         <SectionHeader
           title="Featured projects"
           subtitle="Hand-picked premium listings"
@@ -172,7 +179,9 @@ export const HomeScreen: React.FC = () => {
         ) : (
           <FeaturedCarousel data={featured} onPress={p => goDetail(p.id)} />
         )}
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={440}>
         <SectionHeader
           title="Trending now"
           subtitle="Most-viewed projects this week"
@@ -187,35 +196,40 @@ export const HomeScreen: React.FC = () => {
         >
           {homeLoading
             ? [1, 2].map(i => <PropertyCardSkeleton key={i} width={280} />)
-            : trending.map(p => (
-                <PropertyCard
-                  key={p.id}
-                  property={p}
-                  onPress={() => goDetail(p.id)}
-                  onSavePress={() => dispatch(toggleSaved(p.id))}
-                  saved={saved.includes(p.id)}
-                />
+            : trending.map((p, i) => (
+                <FadeSlideIn key={p.id} delay={500 + i * 40}>
+                  <PropertyCard
+                    property={p}
+                    onPress={() => goDetail(p.id)}
+                    onSavePress={() => dispatch(toggleSaved(p.id))}
+                    saved={saved.includes(p.id)}
+                  />
+                </FadeSlideIn>
               ))}
         </ScrollView>
+        </FadeSlideIn>
 
+        <FadeSlideIn delay={560}>
         <SectionHeader
           title="Recommended for you"
           subtitle="Based on your preferences"
           style={{ marginTop: 24 }}
         />
+        </FadeSlideIn>
         <View style={{ paddingHorizontal: 20 }}>
           {homeLoading
             ? [1, 2].map(i => <PropertyCardSkeleton key={i} />)
-            : recommended.slice(0, 4).map(p => (
-                <PropertyCard
-                  key={p.id}
-                  property={p}
-                  variant="wide"
-                  onPress={() => goDetail(p.id)}
-                  onSavePress={() => dispatch(toggleSaved(p.id))}
-                  saved={saved.includes(p.id)}
-                  style={{ marginBottom: 16 }}
-                />
+            : recommended.slice(0, 4).map((p, i) => (
+                <FadeSlideIn key={p.id} delay={600 + i * 50}>
+                  <PropertyCard
+                    property={p}
+                    variant="wide"
+                    onPress={() => goDetail(p.id)}
+                    onSavePress={() => dispatch(toggleSaved(p.id))}
+                    saved={saved.includes(p.id)}
+                    style={{ marginBottom: 16 }}
+                  />
+                </FadeSlideIn>
               ))}
         </View>
       </ScrollView>

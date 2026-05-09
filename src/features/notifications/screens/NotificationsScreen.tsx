@@ -2,9 +2,18 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   AnimatedHeader,
   EmptyState,
+  FadeSlideIn,
   Screen,
   SkeletonLoader,
   Text,
@@ -89,38 +98,40 @@ export const NotificationsScreen: React.FC = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const cfg = iconForType[item.type];
             const tint = tones[cfg.color];
             return (
-              <Pressable
-                onPress={() => onPress(item)}
-                style={[
-                  styles.row,
-                  {
-                    backgroundColor: item.read ? 'transparent' : theme.colors.primary + '08',
-                    borderBottomColor: theme.colors.divider,
-                  },
-                ]}
-              >
-                <View style={[styles.iconWrap, { backgroundColor: tint + '18' }]}>
-                  <Icon name={cfg.name as any} size={22} color={tint} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text variant="bodyLg" weight={item.read ? '600' : '700'} style={{ flex: 1 }}>
-                      {item.title}
-                    </Text>
-                    <Text variant="caption" color="textMuted">
-                      {timeAgo(item.createdAt)}
+              <FadeSlideIn delay={index * 35}>
+                <Pressable
+                  onPress={() => onPress(item)}
+                  style={[
+                    styles.row,
+                    {
+                      backgroundColor: item.read ? 'transparent' : theme.colors.primary + '08',
+                      borderBottomColor: theme.colors.divider,
+                    },
+                  ]}
+                >
+                  <View style={[styles.iconWrap, { backgroundColor: tint + '18' }]}>
+                    <Icon name={cfg.name as any} size={22} color={tint} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text variant="bodyLg" weight={item.read ? '600' : '700'} style={{ flex: 1 }}>
+                        {item.title}
+                      </Text>
+                      <Text variant="caption" color="textMuted">
+                        {timeAgo(item.createdAt)}
+                      </Text>
+                    </View>
+                    <Text variant="bodySm" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
+                      {item.body}
                     </Text>
                   </View>
-                  <Text variant="bodySm" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
-                    {item.body}
-                  </Text>
-                </View>
-                {!item.read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
-              </Pressable>
+                  {!item.read && <PulsingDot color={theme.colors.primary} />}
+                </Pressable>
+              </FadeSlideIn>
             );
           }}
           ListEmptyComponent={
@@ -135,6 +146,43 @@ export const NotificationsScreen: React.FC = () => {
         />
       )}
     </Screen>
+  );
+};
+
+const PulsingDot: React.FC<{ color: string }> = ({ color }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.6, { duration: 800 }),
+        withTiming(1, { duration: 800 }),
+      ),
+      -1,
+    );
+  }, [scale, opacity]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.unreadDot,
+        { backgroundColor: color },
+        style,
+      ]}
+    />
   );
 };
 

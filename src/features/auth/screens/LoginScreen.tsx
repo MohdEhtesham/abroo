@@ -1,26 +1,46 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
   BottomSheet,
   CustomTextInput,
   GradientButton,
-  Screen,
   Text,
 } from '../../../components';
 import { APP_NAME } from '../../../constants';
 import { useAppDispatch, useAppSelector } from '../../../store';
 import { loginThunk } from '../../../store/slices/authSlice';
 import { useTheme } from '../../../theme';
+import { AuthBackgroundOrbs } from '../components/AuthBackgroundOrbs';
+import { useStaggerEntry } from '../hooks/useStaggerEntry';
 import { authService } from '../services/authService';
 import type { UserRole } from '../types';
 import { LoginFormData, loginSchema, phoneRegex } from '../../../utils/validators';
 
 export const LoginScreen: React.FC = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
   const { loading } = useAppSelector(s => s.auth);
@@ -29,6 +49,39 @@ export const LoginScreen: React.FC = () => {
   const [otpPhone, setOtpPhone] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+
+  // Entrance animations
+  const heroOpacity = useSharedValue(0);
+  const heroY = useSharedValue(-20);
+  const formY = useSharedValue(40);
+  const formOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    heroOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.exp) });
+    heroY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.exp) });
+    formOpacity.value = withDelay(220, withTiming(1, { duration: 600 }));
+    formY.value = withDelay(220, withTiming(0, { duration: 700, easing: Easing.out(Easing.exp) }));
+  }, [heroOpacity, heroY, formOpacity, formY]);
+
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: heroOpacity.value,
+    transform: [{ translateY: heroY.value }],
+  }));
+  const formStyle = useAnimatedStyle(() => ({
+    opacity: formOpacity.value,
+    transform: [{ translateY: formY.value }],
+  }));
+
+  // Cascade entries (delays from form-card animation start)
+  const roleEntry = useStaggerEntry(380);
+  const emailEntry = useStaggerEntry(480);
+  const passwordEntry = useStaggerEntry(580);
+  const forgotEntry = useStaggerEntry(660);
+  const ctaEntry = useStaggerEntry(740);
+  const dividerEntry = useStaggerEntry(820);
+  const otpBtnEntry = useStaggerEntry(880);
+  const trustEntry = useStaggerEntry(960);
+  const signupEntry = useStaggerEntry(1020);
 
   const {
     control,
@@ -72,148 +125,233 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <Screen padded edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primaryDark} />
+
+      {/* HERO */}
+      <LinearGradient
+        colors={[theme.colors.primaryDark, theme.colors.primary, '#1A2D6E']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.hero, { paddingTop: insets.top + 20 }]}
       >
-        <ScrollView contentContainerStyle={{ paddingTop: 24, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
-          <Text variant="displayMd" weight="800" style={{ letterSpacing: -0.5 }}>
+        <AuthBackgroundOrbs accentColor={theme.colors.accent} />
+        <Animated.View style={heroStyle}>
+          <View style={styles.brandRow}>
+            <View style={[styles.brandDot, { backgroundColor: theme.colors.accent }]}>
+              <Icon name="home" size={16} color="#fff" />
+            </View>
+            <Text weight="800" style={{ color: '#fff', marginLeft: 8, letterSpacing: 0.4 }}>
+              {APP_NAME}
+            </Text>
+          </View>
+
+          <Text variant="displayMd" weight="800" style={styles.heroTitle}>
             Welcome back
           </Text>
-          <Text variant="body" color="textSecondary" style={{ marginTop: 6 }}>
-            Sign in to {APP_NAME} to continue your search.
+          <Text variant="body" style={styles.heroSubtitle}>
+            Sign in to continue your dream-home search.
           </Text>
+        </Animated.View>
+      </LinearGradient>
 
-          <View
-            style={[
-              styles.roleSwitch,
-              {
-                backgroundColor: theme.colors.surfaceElevated,
-                borderColor: theme.colors.border,
-              },
-            ]}
+      {/* CARD */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1, marginTop: -28 }}
+      >
+        <Animated.View
+          style={[
+            styles.card,
+            { backgroundColor: theme.colors.background, borderColor: theme.colors.divider },
+            formStyle,
+          ]}
+        >
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 24 }}
+            keyboardShouldPersistTaps="handled"
           >
-            {(
-              [
-                { value: 'consumer' as UserRole, label: 'Buyer', icon: 'search-outline' },
-                { value: 'seller' as UserRole, label: 'Seller', icon: 'business-outline' },
-              ]
-            ).map(opt => {
-              const active = role === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  onPress={() => setRole(opt.value)}
-                  style={[
-                    styles.roleTab,
-                    active && {
-                      backgroundColor: theme.colors.primary,
-                      shadowColor: theme.colors.primary,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    },
-                  ]}
-                >
-                  <Icon
-                    name={opt.icon as any}
-                    size={16}
-                    color={active ? '#fff' : theme.colors.textMuted}
-                  />
-                  <Text
-                    weight="700"
-                    style={{
-                      marginLeft: 8,
-                      color: active ? '#fff' : theme.colors.textMuted,
-                    }}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View style={{ marginTop: 22 }}>
-            <Controller
-              control={control}
-              name="identifier"
-              render={({ field: { onChange, value } }) => (
-                <CustomTextInput
-                  label="Email or Phone"
-                  placeholder="example@email.com"
-                  leftIcon="person-outline"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.identifier?.message}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, value } }) => (
-                <CustomTextInput
-                  label="Password"
-                  placeholder="Enter password"
-                  leftIcon="lock-closed-outline"
-                  secureTextEntry
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.password?.message}
-                />
-              )}
-            />
-            <Pressable
-              style={{ alignSelf: 'flex-end' }}
-              onPress={() => navigation.navigate('ForgotPassword')}
+            {/* Role tabs */}
+            <Animated.View style={roleEntry}>
+            <Text variant="caption" weight="700" color="textMuted" style={styles.fieldLabel}>
+              I AM A
+            </Text>
+            <View
+              style={[
+                styles.roleSwitch,
+                {
+                  backgroundColor: theme.colors.surfaceElevated,
+                  borderColor: theme.colors.border,
+                },
+              ]}
             >
-              <Text variant="bodySm" weight="600" style={{ color: theme.colors.primary }}>
-                Forgot password?
+              {(
+                [
+                  { value: 'consumer' as UserRole, label: 'Buyer', icon: 'search' },
+                  { value: 'seller' as UserRole, label: 'Seller', icon: 'business' },
+                ]
+              ).map(opt => {
+                const active = role === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setRole(opt.value)}
+                    style={styles.roleTab}
+                  >
+                    {active ? (
+                      <LinearGradient
+                        colors={[theme.colors.primary, theme.colors.primaryDark]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.roleTabActive}
+                      >
+                        <Icon name={opt.icon as any} size={16} color="#fff" />
+                        <Text weight="700" style={{ color: '#fff', marginLeft: 8 }}>
+                          {opt.label}
+                        </Text>
+                      </LinearGradient>
+                    ) : (
+                      <View style={styles.roleTabInner}>
+                        <Icon name={`${opt.icon}-outline` as any} size={16} color={theme.colors.textMuted} />
+                        <Text weight="600" style={{ marginLeft: 8, color: theme.colors.textMuted }}>
+                          {opt.label}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+            </Animated.View>
+
+            {/* Form */}
+            <View style={{ marginTop: 22 }}>
+              <Animated.View style={emailEntry}>
+              <Controller
+                control={control}
+                name="identifier"
+                render={({ field: { onChange, value } }) => (
+                  <CustomTextInput
+                    label="Email or Phone"
+                    placeholder="example@email.com"
+                    leftIcon="mail-outline"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    value={value}
+                    onChangeText={onChange}
+                    error={errors.identifier?.message}
+                  />
+                )}
+              />
+              </Animated.View>
+              <Animated.View style={passwordEntry}>
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, value } }) => (
+                  <CustomTextInput
+                    label="Password"
+                    placeholder="Enter password"
+                    leftIcon="lock-closed-outline"
+                    secureTextEntry
+                    value={value}
+                    onChangeText={onChange}
+                    error={errors.password?.message}
+                  />
+                )}
+              />
+              </Animated.View>
+              <Animated.View style={forgotEntry}>
+              <Pressable
+                style={{ alignSelf: 'flex-end' }}
+                onPress={() => navigation.navigate('ForgotPassword')}
+                hitSlop={6}
+              >
+                <Text variant="bodySm" weight="700" style={{ color: theme.colors.primary }}>
+                  Forgot password?
+                </Text>
+              </Pressable>
+              </Animated.View>
+            </View>
+
+            <Animated.View style={[ctaEntry, { marginTop: 24 }]}>
+              <GradientButton
+                title={`Sign In as ${role === 'seller' ? 'Seller' : 'Buyer'}`}
+                iconName="arrow-forward"
+                size="lg"
+                loading={loading}
+                onPress={handleSubmit(onSubmit)}
+              />
+            </Animated.View>
+
+            <Animated.View style={[styles.divider, dividerEntry]}>
+              <View style={[styles.line, { backgroundColor: theme.colors.divider }]} />
+              <Text variant="caption" weight="700" color="textMuted" style={styles.dividerText}>
+                OR CONTINUE WITH
               </Text>
-            </Pressable>
-          </View>
+              <View style={[styles.line, { backgroundColor: theme.colors.divider }]} />
+            </Animated.View>
 
-          <View style={{ marginTop: 28 }}>
-            <GradientButton
-              title={`Sign In as ${role === 'seller' ? 'Seller' : 'Buyer'}`}
-              size="lg"
-              loading={loading}
-              onPress={handleSubmit(onSubmit)}
-            />
-          </View>
+            <Animated.View style={otpBtnEntry}>
+              <Pressable
+                onPress={openOtpFlow}
+                android_ripple={{ color: theme.colors.primary + '22' }}
+                style={({ pressed }) => [
+                  styles.socialBtn,
+                  {
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: theme.colors.border,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <View style={[styles.socialIcon, { backgroundColor: theme.colors.primary + '14' }]} pointerEvents="none">
+                  <Icon name="phone-portrait" size={18} color={theme.colors.primary} />
+                </View>
+                <Text weight="700" style={{ marginLeft: 12, flex: 1 }} pointerEvents="none">
+                  Login with OTP
+                </Text>
+                <Icon name="chevron-forward" size={18} color={theme.colors.textMuted} />
+              </Pressable>
+            </Animated.View>
 
-          <View style={[styles.divider]}>
-            <View style={[styles.line, { backgroundColor: theme.colors.divider }]} />
-            <Text variant="caption" color="textMuted" style={{ marginHorizontal: 12 }}>
-              OR
-            </Text>
-            <View style={[styles.line, { backgroundColor: theme.colors.divider }]} />
-          </View>
+            {/* Trust signals */}
+            <Animated.View style={[styles.trust, { borderTopColor: theme.colors.divider }, trustEntry]}>
+              <View style={styles.trustItem}>
+                <Icon name="shield-checkmark" size={14} color={theme.colors.success} />
+                <Text variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
+                  RERA verified
+                </Text>
+              </View>
+              <View style={[styles.trustDot, { backgroundColor: theme.colors.border }]} />
+              <View style={styles.trustItem}>
+                <Icon name="people" size={14} color={theme.colors.primary} />
+                <Text variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
+                  50K+ users
+                </Text>
+              </View>
+              <View style={[styles.trustDot, { backgroundColor: theme.colors.border }]} />
+              <View style={styles.trustItem}>
+                <Icon name="lock-closed" size={14} color={theme.colors.accent} />
+                <Text variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
+                  256-bit secure
+                </Text>
+              </View>
+            </Animated.View>
 
-          <GradientButton
-            title="Login with OTP"
-            variant="outline"
-            iconName="phone-portrait-outline"
-            iconPosition="left"
-            onPress={openOtpFlow}
-          />
-
-          <View style={styles.signupRow}>
-            <Text variant="bodySm" color="textSecondary">
-              Don't have an account?{' '}
-            </Text>
-            <Pressable onPress={() => navigation.navigate('Signup')}>
-              <Text variant="bodySm" weight="700" style={{ color: theme.colors.primary }}>
-                Create one
+            <Animated.View style={[styles.signupRow, signupEntry]}>
+              <Text variant="bodySm" color="textSecondary">
+                Don't have an account?{' '}
               </Text>
-            </Pressable>
-          </View>
-        </ScrollView>
+              <Pressable onPress={() => navigation.navigate('Signup')} hitSlop={6}>
+                <Text variant="bodySm" weight="800" style={{ color: theme.colors.primary }}>
+                  Create one
+                </Text>
+              </Pressable>
+            </Animated.View>
+          </ScrollView>
+        </Animated.View>
       </KeyboardAvoidingView>
 
       <BottomSheet
@@ -249,25 +387,71 @@ export const LoginScreen: React.FC = () => {
           size="lg"
         />
       </BottomSheet>
-    </Screen>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  hero: {
+    paddingHorizontal: 24,
+    paddingBottom: 60,
+    overflow: 'hidden',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    color: '#fff',
+    letterSpacing: -0.5,
+    marginTop: 28,
+  },
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 6,
+  },
+  card: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  fieldLabel: {
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
   roleSwitch: {
     flexDirection: 'row',
-    marginTop: 22,
     padding: 4,
     borderRadius: 14,
     borderWidth: 1,
   },
   roleTab: {
     flex: 1,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  roleTabActive: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 11,
-    borderRadius: 10,
+  },
+  roleTabInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   divider: {
     flexDirection: 'row',
@@ -278,9 +462,46 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
   },
+  dividerText: {
+    marginHorizontal: 12,
+    letterSpacing: 0.6,
+  },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  socialIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trust: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 22,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  trustDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    marginHorizontal: 10,
+  },
   signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 30,
+    marginTop: 18,
   },
 });

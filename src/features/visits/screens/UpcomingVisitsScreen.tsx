@@ -74,7 +74,11 @@ export const UpcomingVisitsScreen: React.FC = () => {
 
   return (
     <Screen edges={['top']}>
-      <AnimatedHeader title="My Visits" showBack={false} />
+      <AnimatedHeader
+        title="My Visits"
+        showBack={navigation.canGoBack()}
+        onBackPress={() => navigation.goBack()}
+      />
       <View style={styles.tabs}>
         {TABS.map(t => {
           const active = tab === t.id;
