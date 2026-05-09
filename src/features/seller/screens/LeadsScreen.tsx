@@ -221,14 +221,20 @@ export const LeadsScreen: React.FC = () => {
                   </Pressable>
                   {item.status !== 'closed_won' && item.status !== 'closed_lost' && (
                     <Pressable
-                      onPress={() => {
+                      onPress={async () => {
                         const next: LeadStatus =
                           item.status === 'new'
                             ? 'contacted'
                             : item.status === 'contacted'
                             ? 'visit_booked'
                             : 'closed_won';
-                        dispatch(setLeadStatusThunk({ id: item.id, status: next }));
+                        await dispatch(setLeadStatusThunk({ id: item.id, status: next }));
+                        // Visit-derived leads get *promoted* to real Lead rows
+                        // server-side, so their id changes. Reload to reconcile
+                        // the synthesized row with the freshly-persisted lead.
+                        if (item.id.startsWith('visit_')) {
+                          dispatch(loadLeadsThunk());
+                        }
                       }}
                       style={[styles.actionBtn, { backgroundColor: theme.colors.success + '20' }]}
                     >
