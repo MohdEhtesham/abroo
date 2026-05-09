@@ -85,6 +85,10 @@ const mock = {
     mockResponse({ ...sampleUser, ...data }, 600),
 
   deleteAccount: () => mockResponse({ success: true }, 600),
+
+  // Mock: just stores the local URI directly. Works for demo / offline.
+  uploadAvatar: (localUri: string): Promise<User> =>
+    mockResponse({ ...sampleUser, avatar: localUri }, 500),
 };
 
 const real = {
@@ -115,6 +119,42 @@ const real = {
   updateProfile: (data: Partial<User>) => apiPut<User>('/auth/profile', data),
 
   deleteAccount: () => apiDelete<{ success: boolean }>('/auth/me'),
+
+  /**
+   * Two-step flow for the real backend:
+   *  1. Upload the local image to Cloudinary via /api/uploads/single
+   *  2. PUT the returned URL onto the user profile
+   *
+   * If the server has Cloudinary disabled (env vars missing), the upload
+   * returns 503 — we surface a friendly error and the caller falls back to
+   * the local URI for the immediate UI update.
+   */
+  uploadAvatar: async (localUri: string): Promise<User> => {
+    const form = new FormData();
+    // Best-effort filename + mime — react-native-image-picker URIs are usually
+    // .jpg from the camera and varying from gallery
+    const filename = localUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
+    const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+    const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+    form.append('file', {
+      uri: localUri,
+      name: filename,
+      type: mime,
+    } as any);
+
+    const uploaded = await apiPost<{ url: string; publicId: string }>(
+      '/uploads/single',
+      form,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        // Don't auto-retry uploads — they're large and not idempotent
+        ...({ noRetry: true } as any),
+      },
+    );
+    if (!uploaded?.url) throw new Error('Upload returned no URL');
+
+    return apiPut<User>('/auth/profile', { avatar: uploaded.url });
+  },
 };
 
 export const authService = USE_MOCK ? mock : real;
