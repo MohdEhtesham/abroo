@@ -41,6 +41,12 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Backend (deployed separately at github.com/MohdEhtesham/backenddeploy)
+backend/
+
+# Claude Code session data
+.claude/
+
 # fastlane
 #
 # It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the

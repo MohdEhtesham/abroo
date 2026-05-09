@@ -1,0 +1,51 @@
+export const endpoints = {
+  auth: {
+    login: '/auth/login',
+    signup: '/auth/signup',
+    sendOtp: '/auth/otp/send',
+    verifyOtp: '/auth/otp/verify',
+    forgotPassword: '/auth/forgot-password',
+    me: '/auth/me',
+    logout: '/auth/logout',
+  },
+  properties: {
+    list: '/properties',
+    detail: (id: string) => `/properties/${id}`,
+    featured: '/properties/featured',
+    trending: '/properties/trending',
+    recommended: '/properties/recommended',
+    similar: (id: string) => `/properties/${id}/similar`,
+    search: '/properties/search',
+    saved: '/properties/saved',
+    save: (id: string) => `/properties/${id}/save`,
+    unsave: (id: string) => `/properties/${id}/unsave`,
+  },
+  inquiries: {
+    list: '/inquiries',
+    create: '/inquiries',
+    detail: (id: string) => `/inquiries/${id}`,
+  },
+  visits: {
+    list: '/visits',
+    create: '/visits',
+    detail: (id: string) => `/visits/${id}`,
+    cancel: (id: string) => `/visits/${id}/cancel`,
+    reschedule: (id: string) => `/visits/${id}/reschedule`,
+    slots: '/visits/slots',
+  },
+  notifications: {
+    list: '/notifications',
+    markRead: (id: string) => `/notifications/${id}/read`,
+    markAllRead: '/notifications/read-all',
+  },
+  chat: {
+    threads: '/chat/threads',
+    messages: (threadId: string) => `/chat/threads/${threadId}/messages`,
+    send: (threadId: string) => `/chat/threads/${threadId}/send`,
+    requestCallback: '/chat/callback',
+  },
+  profile: {
+    update: '/profile',
+    preferences: '/profile/preferences',
+  },
+};

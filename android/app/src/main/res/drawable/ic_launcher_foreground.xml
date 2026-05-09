@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      Aabroo: gold diamond-key icon with a house-shaped head.
+      Layout note: Android adaptive icons mask the outer 18dp on each side,
+      so the safe-zone is 72x72 centered at (54, 54). All visible content stays inside that.
+    -->
+
+    <!-- Soft circular halo behind the key (subtle gold inner glow) -->
+    <path
+        android:pathData="M54,54m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0Z"
+        android:strokeWidth="0">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:centerX="54" android:centerY="44"
+                android:gradientRadius="32"
+                android:type="radial">
+                <item android:offset="0.0" android:color="#33D4AF37" />
+                <item android:offset="1.0" android:color="#00D4AF37" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Outer key head (house silhouette) — soft gold shadow ring -->
+    <path
+        android:fillColor="#0F000000"
+        android:pathData="M54,30 L74,46 L74,66 Q74,68 72,68 L36,68 Q34,68 34,66 L34,46 Z" />
+
+    <!-- Key head: house-shaped (pitched roof + body) — solid gold gradient -->
+    <path
+        android:pathData="M54,28 L74,44 L74,64 Q74,66 72,66 L36,66 Q34,66 34,64 L34,44 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:startX="34" android:startY="28"
+                android:endX="74" android:endY="66"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#F2D77A" />
+                <item android:offset="0.55" android:color="#D4AF37" />
+                <item android:offset="1.0" android:color="#B5942C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner diamond cutout (royal-blue, signifies "premium / valuable") -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,40 L62,50 L54,60 L46,50 Z" />
+
+    <!-- Diamond highlight (lighter facet) -->
+    <path
+        android:fillColor="#3B5BB8"
+        android:pathData="M54,40 L62,50 L54,50 Z" />
+
+    <!-- Key shaft -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M51,66 L57,66 L57,82 L51,82 Z" />
+
+    <!-- Key shaft highlight (left edge gradient) -->
+    <path
+        android:fillColor="#F2D77A"
+        android:pathData="M51,66 L53,66 L53,82 L51,82 Z" />
+
+    <!-- Key teeth (notches on the right) -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M57,72 L62,72 L62,75 L57,75 Z" />
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M57,77 L60,77 L60,80 L57,80 Z" />
+
+    <!-- Tip of the key (rounded bottom) -->
+    <path
+        android:fillColor="#B5942C"
+        android:pathData="M51,80 L57,80 L57,84 Q57,86 54,86 Q51,86 51,84 Z" />
+</vector>
