@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   Modal,
   Pressable,
@@ -6,11 +6,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { useTheme } from '../theme';
 import { Text } from './Text';
 import { SCREEN_HEIGHT } from '../utils/dimensions';
@@ -24,6 +19,11 @@ interface BottomSheetProps {
   contentStyle?: ViewStyle;
 }
 
+/**
+ * Bottom sheet using Modal's native "slide" animation. Avoids known
+ * Reanimated v4 + Modal worklet context issues that caused contents
+ * to remain off-screen on Android.
+ */
 export const BottomSheet: React.FC<BottomSheetProps> = ({
   visible,
   onClose,
@@ -33,46 +33,25 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   contentStyle,
 }) => {
   const theme = useTheme();
-  const translateY = useSharedValue(SCREEN_HEIGHT);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    if (visible) {
-      translateY.value = withTiming(0, { duration: 280 });
-      opacity.value = withTiming(1, { duration: 220 });
-    } else {
-      translateY.value = withTiming(SCREEN_HEIGHT, { duration: 220 });
-      opacity.value = withTiming(0, { duration: 180 });
-    }
-  }, [visible, translateY, opacity]);
-
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
 
   return (
     <Modal
       transparent
       visible={visible}
       onRequestClose={onClose}
-      animationType="none"
+      animationType="slide"
       statusBarTranslucent
     >
       <View style={styles.container}>
-        <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
-          <Pressable
-            onPress={onClose}
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: theme.colors.overlay },
-            ]}
-          />
-        </Animated.View>
-        <Animated.View
+        {/* Tap-to-close overlay (sits BEHIND the sheet because the sheet renders later in the tree) */}
+        <Pressable
+          onPress={onClose}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: theme.colors.overlay },
+          ]}
+        />
+        <View
           style={[
             styles.sheet,
             {
@@ -81,7 +60,6 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               borderTopRightRadius: theme.radius['2xl'],
               maxHeight,
             },
-            sheetStyle,
             contentStyle,
           ]}
         >
@@ -94,7 +72,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             {children}
           </View>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );

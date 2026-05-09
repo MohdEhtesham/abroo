@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { TextStyle } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Easing,
   runOnJS,
@@ -12,7 +11,7 @@ import { Text, TextProps } from './Text';
 
 interface CountUpProps extends Omit<TextProps, 'children'> {
   to: number;
-  /** Animation duration in ms (default 1100) */
+  /** Animation duration in ms (default 700) */
   duration?: number;
   /** Delay before starting (default 0) */
   delay?: number;
@@ -37,15 +36,31 @@ export const CountUp: React.FC<CountUpProps> = ({
   ...textProps
 }) => {
   const progress = useSharedValue(0);
+
+  // Format on JS thread — keeps the worklet reactor pure.
+  const format = useCallback(
+    (n: number) => {
+      const fixed = decimals > 0 ? n.toFixed(decimals) : Math.round(n).toString();
+      if (localized && decimals === 0) {
+        return prefix + Math.round(n).toLocaleString('en-IN') + suffix;
+      }
+      return prefix + fixed + suffix;
+    },
+    [decimals, suffix, prefix, localized],
+  );
+
   const [display, setDisplay] = useState<string>(() => format(0));
 
-  function format(n: number) {
-    const fixed = decimals > 0 ? n.toFixed(decimals) : Math.round(n).toString();
-    if (localized && decimals === 0) {
-      return prefix + Math.round(n).toLocaleString('en-IN') + suffix;
-    }
-    return prefix + fixed + suffix;
-  }
+  // Capture target in a ref so worklet only ever reads a primitive
+  const toRef = useRef(to);
+  toRef.current = to;
+
+  const updateDisplay = useCallback(
+    (n: number) => {
+      setDisplay(format(n));
+    },
+    [format],
+  );
 
   useEffect(() => {
     progress.value = 0;
@@ -56,12 +71,12 @@ export const CountUp: React.FC<CountUpProps> = ({
   }, [progress, to, duration, delay]);
 
   useAnimatedReaction(
-    () => progress.value,
-    p => {
-      const current = p * to;
-      runOnJS(setDisplay)(format(current));
+    () => progress.value * to,
+    (current, prev) => {
+      if (prev === current) return;
+      runOnJS(updateDisplay)(current);
     },
-    [to, decimals, suffix, prefix, localized],
+    [to],
   );
 
   return <Text {...textProps}>{display}</Text>;

@@ -1,12 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ViewStyle } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface FadeSlideInProps {
   children: React.ReactNode;
@@ -18,8 +12,8 @@ interface FadeSlideInProps {
 }
 
 /**
- * Wraps children in an Animated.View that fades + slides in on mount.
- * Snappy by default so cascades don't feel sluggish.
+ * Wrapper that fades + slides children in on mount using Reanimated v4
+ * layout animations. Native-driven and reliable inside any context.
  */
 export const FadeSlideIn: React.FC<FadeSlideInProps> = ({
   children,
@@ -28,21 +22,14 @@ export const FadeSlideIn: React.FC<FadeSlideInProps> = ({
   from = 12,
   style,
 }) => {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(from);
+  const entering = FadeInDown.delay(delay).duration(duration).withInitialValues({
+    opacity: 0,
+    transform: [{ translateY: from }],
+  });
 
-  useEffect(() => {
-    opacity.value = withDelay(delay, withTiming(1, { duration }));
-    translateY.value = withDelay(
-      delay,
-      withTiming(0, { duration, easing: Easing.out(Easing.cubic) }),
-    );
-  }, [opacity, translateY, delay, duration]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return <Animated.View style={[animatedStyle, style as any]}>{children}</Animated.View>;
+  return (
+    <Animated.View style={style as any} entering={entering}>
+      {children}
+    </Animated.View>
+  );
 };
