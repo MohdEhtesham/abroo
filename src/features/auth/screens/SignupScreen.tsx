@@ -127,14 +127,9 @@ export const SignupScreen: React.FC = () => {
             <Animated.View style={roleEntry}>
             <View style={styles.roleHeadRow}>
               <View style={[styles.roleHeadAccent, { backgroundColor: theme.colors.primary }]} />
-              <View style={{ flex: 1 }}>
-                <Text weight="800" style={{ fontSize: 17, letterSpacing: -0.3 }}>
-                  I'm a…
-                </Text>
-                <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-                  Pick the one that fits your goal
-                </Text>
-              </View>
+              <Text weight="800" style={{ fontSize: 15, letterSpacing: -0.2 }}>
+                I'm a…
+              </Text>
             </View>
             <View style={styles.roleRow}>
               {(
@@ -171,14 +166,14 @@ export const SignupScreen: React.FC = () => {
                           <Icon name="checkmark" size={12} color={theme.colors.primary} />
                         </View>
                         <View style={[styles.roleIconChip, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
-                          <Icon name={opt.icon as any} size={20} color="#fff" />
+                          <Icon name={opt.icon as any} size={18} color="#fff" />
                         </View>
-                        <Text weight="800" style={{ color: '#fff', fontSize: 15, marginTop: 8 }}>
+                        <Text weight="800" style={{ color: '#fff', fontSize: 14, marginTop: 6 }}>
                           {opt.label}
                         </Text>
                         <Text
                           variant="caption"
-                          style={{ color: 'rgba(255,255,255,0.85)', marginTop: 2, textAlign: 'center' }}
+                          style={{ color: 'rgba(255,255,255,0.85)', marginTop: 1, fontSize: 11, textAlign: 'center' }}
                         >
                           {opt.desc}
                         </Text>
@@ -195,12 +190,12 @@ export const SignupScreen: React.FC = () => {
                         ]}
                       >
                         <View style={[styles.roleIconChip, { backgroundColor: theme.colors.primary + '14' }]}>
-                          <Icon name={`${opt.icon}-outline` as any} size={20} color={theme.colors.primary} />
+                          <Icon name={`${opt.icon}-outline` as any} size={18} color={theme.colors.primary} />
                         </View>
-                        <Text weight="700" style={{ marginTop: 8, fontSize: 15, color: theme.colors.text }}>
+                        <Text weight="700" style={{ marginTop: 6, fontSize: 14, color: theme.colors.text }}>
                           {opt.label}
                         </Text>
-                        <Text variant="caption" color="textMuted" style={{ marginTop: 2, textAlign: 'center' }}>
+                        <Text variant="caption" color="textMuted" style={{ marginTop: 1, fontSize: 11, textAlign: 'center' }}>
                           {opt.desc}
                         </Text>
                       </View>
@@ -211,7 +206,7 @@ export const SignupScreen: React.FC = () => {
             </View>
             </Animated.View>
 
-            <View style={{ marginTop: 22 }}>
+            <View style={{ marginTop: 14 }}>
               <Animated.View style={nameEntry}>
               <Controller
                 control={control}
@@ -283,7 +278,7 @@ export const SignupScreen: React.FC = () => {
               </Animated.View>
             </View>
 
-            <Animated.View style={[ctaEntry, { marginTop: 18 }]}>
+            <Animated.View style={[ctaEntry, { marginTop: 12 }]}>
               <GradientButton
                 title="Create Account"
                 iconName="arrow-forward"
@@ -325,7 +320,7 @@ export const SignupScreen: React.FC = () => {
 const styles = StyleSheet.create({
   hero: {
     paddingHorizontal: 20,
-    paddingBottom: 56,
+    paddingBottom: 32,
     overflow: 'hidden',
   },
   topRow: {
@@ -342,16 +337,18 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: '#fff',
     letterSpacing: -0.5,
-    marginTop: 22,
+    marginTop: 14,
+    fontSize: 26,
+    lineHeight: 30,
   },
   heroSubtitle: {
     color: 'rgba(255,255,255,0.85)',
-    marginTop: 6,
+    marginTop: 4,
   },
   card: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 16,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -363,13 +360,13 @@ const styles = StyleSheet.create({
   roleHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   roleHeadAccent: {
-    width: 4,
-    height: 32,
+    width: 3,
+    height: 22,
     borderRadius: 2,
-    marginRight: 10,
+    marginRight: 8,
   },
   roleRow: {
     flexDirection: 'row',
@@ -379,12 +376,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   roleCard: {
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 10,
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 102,
+    minHeight: 80,
     overflow: 'hidden',
   },
   roleCardActive: {
@@ -406,17 +403,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   roleIconChip: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   signinRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 22,
-    paddingTop: 18,
+    marginTop: 14,
+    paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
