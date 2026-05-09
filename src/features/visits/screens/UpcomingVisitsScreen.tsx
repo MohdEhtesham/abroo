@@ -159,7 +159,22 @@ export const UpcomingVisitsScreen: React.FC = () => {
                 </View>
               </View>
               {item.status === 'upcoming' && (
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  {item.mode === 'virtual' && (
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: theme.colors.success }]}
+                      onPress={() =>
+                        navigation.navigate('VideoCall', {
+                          visitId: item.id,
+                          propertyTitle: item.propertyTitle,
+                        })
+                      }
+                    >
+                      <Text variant="bodySm" weight="700" style={{ color: '#fff' }}>
+                        Join virtual tour
+                      </Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: theme.colors.primary + '14' }]}
                     onPress={() =>

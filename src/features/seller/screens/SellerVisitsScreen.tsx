@@ -188,6 +188,12 @@ export const SellerVisitsScreen: React.FC = () => {
               visit={item}
               onCancel={() => onCancel(item)}
               onMarkCompleted={() => onMarkCompleted(item)}
+              onJoinCall={() =>
+                navigation.navigate('VideoCall', {
+                  visitId: item.id,
+                  propertyTitle: item.propertyTitle,
+                })
+              }
             />
           )}
           ListEmptyComponent={
@@ -228,9 +234,10 @@ interface VisitCardProps {
   visit: SellerVisit;
   onCancel: () => void;
   onMarkCompleted: () => void;
+  onJoinCall: () => void;
 }
 
-const VisitCard: React.FC<VisitCardProps> = ({ visit, onCancel, onMarkCompleted }) => {
+const VisitCard: React.FC<VisitCardProps> = ({ visit, onCancel, onMarkCompleted, onJoinCall }) => {
   const theme = useTheme();
   const meta = statusMeta(visit.status);
   const buyerName = visit.buyer?.fullName ?? 'Buyer';
@@ -322,6 +329,17 @@ const VisitCard: React.FC<VisitCardProps> = ({ visit, onCancel, onMarkCompleted 
       )}
 
       <View style={styles.actionsRow}>
+        {isVirtual && isActionable && (
+          <Pressable
+            onPress={onJoinCall}
+            style={[styles.actionBtn, { backgroundColor: theme.colors.success }]}
+          >
+            <Icon name="videocam" size={14} color="#fff" />
+            <Text variant="caption" weight="700" style={{ color: '#fff', marginLeft: 5 }}>
+              Join Tour
+            </Text>
+          </Pressable>
+        )}
         <Pressable
           onPress={onCall}
           style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]}

@@ -10,6 +10,7 @@ import { BottomTabs } from './BottomTabs';
 import { ChatNavigator } from './ChatNavigator';
 import { InquiryNavigator } from './InquiryNavigator';
 import { NotificationsNavigator } from './NotificationsNavigator';
+import { VideoCallScreen } from '../features/visits/screens/VideoCallScreen';
 import type { AuthStackParamList, RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -79,6 +80,11 @@ export const RootNavigator: React.FC = () => {
               name="InquiryStack"
               component={InquiryWrapped}
               options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="VideoCall"
+              component={VideoCallScreen}
+              options={{ animation: 'fade', presentation: 'fullScreenModal' }}
             />
           </>
         )}

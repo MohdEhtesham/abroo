@@ -64,4 +64,5 @@ export type RootStackParamList = {
   ChatStack: NavigatorScreenParams<ChatStackParamList>;
   NotificationsStack: NavigatorScreenParams<NotificationsStackParamList>;
   InquiryStack: NavigatorScreenParams<InquiryStackParamList>;
+  VideoCall: { visitId: string; propertyTitle?: string };
 };
