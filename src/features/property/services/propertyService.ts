@@ -65,6 +65,7 @@ const mock = {
   recommended: () => mockResponse(getRecommended(), 500),
   similar: (id: string) => mockResponse(getSimilar(id), 400),
   search: (query: string) => mockResponse(applyFilters(MOCK_PROPERTIES, { search: query }), 400),
+  saved: (): Promise<Property[]> => mockResponse([], 200),
 };
 
 const buildQuery = (filters: PropertyFilters, page: number, pageSize: number) => {

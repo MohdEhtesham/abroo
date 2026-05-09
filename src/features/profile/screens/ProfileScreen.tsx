@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -16,6 +16,14 @@ import {
 import { Alert } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../../store';
 import { deleteAccountThunk, logoutThunk } from '../../../store/slices/authSlice';
+import { loadInquiriesThunk } from '../../../store/slices/inquirySlice';
+import { loadSavedThunk } from '../../../store/slices/propertySlice';
+import {
+  loadAnalyticsThunk,
+  loadLeadsThunk,
+  loadListingsThunk,
+} from '../../../store/slices/sellerSlice';
+import { loadVisitsThunk } from '../../../store/slices/visitSlice';
 import { useTheme, useThemeMode } from '../../../theme';
 
 interface MenuItem {
@@ -36,11 +44,31 @@ export const ProfileScreen: React.FC = () => {
   const inquiriesCount = useAppSelector(s => s.inquiry.list.length);
   const visitsCount = useAppSelector(s => s.visit.list.length);
   const savedCount = useAppSelector(s => s.property.saved.length);
+  const listingsCount = useAppSelector(s => s.seller.listings.length);
+  const leadsCount = useAppSelector(s => s.seller.leads.length);
+  const sellerViews = useAppSelector(s => s.seller.analytics?.totalViews ?? 0);
 
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isSeller = user?.role === 'seller';
+
+  // Refresh stat counts from the API every time Profile is focused so they
+  // reflect server state on fresh logins / after creating items elsewhere.
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      if (isSeller) {
+        dispatch(loadListingsThunk());
+        dispatch(loadLeadsThunk());
+        dispatch(loadAnalyticsThunk());
+      } else {
+        dispatch(loadInquiriesThunk());
+        dispatch(loadVisitsThunk());
+        dispatch(loadSavedThunk());
+      }
+    }, [dispatch, user, isSeller]),
+  );
 
   const consumerAccountItems: MenuItem[] = [
     { id: 'edit', label: 'Edit Profile', icon: 'person-outline', route: 'EditProfile' },
@@ -119,11 +147,23 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={styles.statsCard}>
           <Card style={[styles.stats, { borderColor: theme.colors.border }]} padding={0}>
-            <Stat label="Inquiries" value={inquiriesCount} delay={120} />
-            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
-            <Stat label="Visits" value={visitsCount} delay={180} />
-            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
-            <Stat label="Saved" value={savedCount} delay={240} />
+            {isSeller ? (
+              <>
+                <Stat label="Listings" value={listingsCount} delay={120} />
+                <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+                <Stat label="Leads" value={leadsCount} delay={180} />
+                <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+                <Stat label="Views" value={sellerViews} delay={240} />
+              </>
+            ) : (
+              <>
+                <Stat label="Inquiries" value={inquiriesCount} delay={120} />
+                <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+                <Stat label="Visits" value={visitsCount} delay={180} />
+                <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+                <Stat label="Saved" value={savedCount} delay={240} />
+              </>
+            )}
           </Card>
         </View>
 

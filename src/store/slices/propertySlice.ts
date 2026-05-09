@@ -47,6 +47,11 @@ export const loadListThunk = createAsyncThunk(
   },
 );
 
+export const loadSavedThunk = createAsyncThunk('property/loadSaved', async () => {
+  const items = await propertyService.saved();
+  return items.map(p => p.id);
+});
+
 const propertySlice = createSlice({
   name: 'property',
   initialState,
@@ -101,6 +106,9 @@ const propertySlice = createSlice({
       .addCase(loadListThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? null;
+      })
+      .addCase(loadSavedThunk.fulfilled, (state, action) => {
+        state.saved = action.payload;
       });
   },
 });
