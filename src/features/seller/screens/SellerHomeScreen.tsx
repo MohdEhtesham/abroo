@@ -22,7 +22,7 @@ import {
   loadSellerVisitsThunk,
 } from '../../../store/slices/sellerSlice';
 import { useTheme } from '../../../theme';
-import { timeAgo } from '../../../utils/format';
+import { formatDate, timeAgo } from '../../../utils/format';
 
 export const SellerHomeScreen: React.FC = () => {
   const theme = useTheme();
@@ -47,7 +47,11 @@ export const SellerHomeScreen: React.FC = () => {
 
   const live = listings.filter(l => l.status === 'live').length;
   const newLeads = leads.filter(l => l.status === 'new').length;
-  const upcomingVisits = visits.filter(v => v.status === 'upcoming').length;
+  const upcoming = visits.filter(v => v.status === 'upcoming');
+  const upcomingVisits = upcoming.length;
+  // Backend already sorts visits by date asc, so the first upcoming is the
+  // soonest one. Used to render a preview row in the visits tile.
+  const nextVisit = upcoming[0];
   const recentLeads = leads.slice(0, 3);
   const seller = user?.seller;
 
@@ -141,26 +145,67 @@ export const SellerHomeScreen: React.FC = () => {
           <FadeSlideIn delay={260} style={{ paddingHorizontal: 20, marginTop: 14 }}>
             <Pressable
               onPress={() => navigation.navigate('SellerVisits', { initialTab: 'upcoming' })}
-              style={[
-                styles.visitTile,
-                {
-                  backgroundColor: theme.colors.success + '14',
-                  borderColor: theme.colors.success + '40',
-                },
-              ]}
             >
-              <View style={[styles.visitIcon, { backgroundColor: theme.colors.success }]}>
-                <Icon name="calendar" size={20} color="#fff" />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text weight="800" style={{ color: theme.colors.success }}>
-                  {upcomingVisits} upcoming site visit{upcomingVisits === 1 ? '' : 's'}
-                </Text>
-                <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-                  See who's coming, when, and how to reach them
-                </Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color={theme.colors.success} />
+              <LinearGradient
+                colors={['#10b981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.visitHero}
+              >
+                {/* Decorative orbs for depth */}
+                <View style={[styles.visitOrb, styles.visitOrbA]} pointerEvents="none" />
+                <View style={[styles.visitOrb, styles.visitOrbB]} pointerEvents="none" />
+
+                <View style={styles.visitTopRow}>
+                  <View style={styles.visitIconWrap}>
+                    <Icon name="videocam" size={22} color="#fff" />
+                  </View>
+                  <View style={styles.visitLivePill}>
+                    <View style={styles.visitLiveDot} />
+                    <Text variant="caption" weight="800" style={{ color: '#fff', letterSpacing: 1, fontSize: 10 }}>
+                      LIVE PIPELINE
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 16 }}>
+                  <CountUp
+                    to={upcomingVisits}
+                    duration={900}
+                    variant="h1"
+                    weight="800"
+                    style={{ color: '#fff', fontSize: 44, lineHeight: 50 } as any}
+                  />
+                  <Text
+                    weight="700"
+                    style={{ color: 'rgba(255,255,255,0.9)', marginLeft: 10, marginBottom: 8, fontSize: 15 }}
+                  >
+                    upcoming site visit{upcomingVisits === 1 ? '' : 's'}
+                  </Text>
+                </View>
+
+                {nextVisit && (
+                  <View style={styles.visitNextChip}>
+                    <Icon name="time-outline" size={14} color="#fff" />
+                    <Text variant="caption" weight="700" style={{ color: '#fff', marginLeft: 6 }} numberOfLines={1}>
+                      Next:{' '}
+                      <Text variant="caption" weight="800" style={{ color: '#fff' }}>
+                        {nextVisit.buyer?.fullName?.split(' ')[0] ?? 'Buyer'}
+                      </Text>{' '}
+                      · {formatDate(nextVisit.date)} · {nextVisit.timeSlot}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.visitFooter}>
+                  <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    Tap to manage all visits
+                  </Text>
+                  <View style={styles.visitArrow}>
+                    <Icon name="arrow-forward" size={16} color="#fff" />
+                  </View>
+                </View>
+              </LinearGradient>
             </Pressable>
           </FadeSlideIn>
         )}
@@ -397,17 +442,88 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  visitTile: {
+  visitHero: {
+    padding: 18,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  visitOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  visitOrbA: {
+    width: 160,
+    height: 160,
+    top: -50,
+    right: -40,
+  },
+  visitOrbB: {
+    width: 100,
+    height: 100,
+    bottom: -30,
+    left: -20,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  visitTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
+    justifyContent: 'space-between',
   },
-  visitIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  visitIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  visitLivePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  visitLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+    marginRight: 6,
+  },
+  visitNextChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginTop: 14,
+    maxWidth: '100%',
+  },
+  visitFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  visitArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
