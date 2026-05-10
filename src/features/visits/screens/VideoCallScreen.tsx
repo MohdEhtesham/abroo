@@ -10,6 +10,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import InCallManager from 'react-native-incall-manager';
 import {
   MediaStream,
   RTCIceCandidate,
@@ -109,6 +110,9 @@ export const VideoCallScreen: React.FC = () => {
 
     try { pcRef.current?.close(); } catch {}
     pcRef.current = null;
+
+    // Release VoIP audio routing + wakelock the moment the call ends.
+    try { InCallManager.stop(); } catch {}
 
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => {
@@ -263,6 +267,14 @@ export const VideoCallScreen: React.FC = () => {
     let cancelled = false;
 
     (async () => {
+      // Switch the device into VoIP mode: routes audio to the speaker
+      // for video calls, takes a wakelock so the screen stays on, and
+      // ensures any ringtone playing from the overlay stops cleanly.
+      try { InCallManager.stopRingtone(); } catch {}
+      try { InCallManager.start({ media: 'video' }); } catch {}
+      try { InCallManager.setKeepScreenOn(true); } catch {}
+      try { InCallManager.setSpeakerphoneOn(true); } catch {}
+
       setState('requesting-permissions');
       const ok = await requestAndroidPermissions();
       if (!ok) {

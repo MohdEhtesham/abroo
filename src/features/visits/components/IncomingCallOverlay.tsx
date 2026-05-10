@@ -3,11 +3,11 @@ import {
   Modal,
   Platform,
   Pressable,
-  StatusBar,
   StyleSheet,
   Vibration,
   View,
 } from 'react-native';
+import InCallManager from 'react-native-incall-manager';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { io, Socket } from 'socket.io-client';
@@ -81,18 +81,37 @@ export const IncomingCallOverlay: React.FC = () => {
     };
   }, [isAuthenticated, token]);
 
-  // Vibrate while the modal is up; stop when it dismisses.
+  // Vibrate + play the system ringtone while the modal is up. Both are
+  // wrapped in try/catch because:
+  //   - Vibration.vibrate throws if the VIBRATE permission isn't declared
+  //     (it now is, but old installs may not have re-granted yet).
+  //   - InCallManager talks to native code; if its module isn't autolinked
+  //     yet (fresh build pending), it should not take down the JS thread.
   useEffect(() => {
     if (!incoming) return;
-    Vibration.vibrate(RING_PATTERN, true);
+    try {
+      Vibration.vibrate(RING_PATTERN, true);
+    } catch (e) {
+      console.warn('[ring] vibrate failed', e);
+    }
+    try {
+      // _DEFAULT_ asks Android to play the user's chosen system ringtone.
+      // The other args (category / fileType / seconds) are optional at
+      // runtime — the lib's TS typings overstate them, so cast through.
+      (InCallManager.startRingtone as any)('_DEFAULT_', undefined, 'incomingCall', 30);
+    } catch (e) {
+      console.warn('[ring] startRingtone failed', e);
+    }
     return () => {
       try { Vibration.cancel(); } catch {}
+      try { InCallManager.stopRingtone(); } catch {}
     };
   }, [incoming]);
 
   const dismiss = useCallback(() => {
     setIncoming(null);
     try { Vibration.cancel(); } catch {}
+    try { InCallManager.stopRingtone(); } catch {}
   }, []);
 
   const onAccept = useCallback(() => {
@@ -121,9 +140,10 @@ export const IncomingCallOverlay: React.FC = () => {
       transparent={false}
       animationType="fade"
       onRequestClose={onDecline}
-      statusBarTranslucent
+      // Avoid statusBarTranslucent + a child StatusBar combo — that's a
+      // known Android crash on some system-UI implementations. The gradient
+      // already paints edge-to-edge.
     >
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
       <LinearGradient
         colors={[theme.colors.primary, theme.colors.primaryDark]}
         start={{ x: 0, y: 0 }}
