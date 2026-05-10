@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
+  PermissionsAndroid,
   Platform,
   Pressable,
   StyleSheet,
@@ -46,6 +47,29 @@ export const IncomingCallOverlay: React.FC = () => {
 
   const [incoming, setIncoming] = useState<IncomingCallPayload | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  // Asynchronous SecurityException from Android's VibratorService can't be
+  // caught at the JS call site, so we probe the permission once on mount
+  // and only invoke Vibration if the OS has actually granted it. Older
+  // installs (without VIBRATE in the manifest) silently skip the buzz
+  // instead of crashing the JS thread.
+  const canVibrateRef = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      canVibrateRef.current = true;
+      return;
+    }
+    // VIBRATE is a "normal" permission — Android grants it automatically
+    // *if* it's declared in AndroidManifest.xml. .check returns false
+    // when the manifest entry isn't there.
+    PermissionsAndroid.check('android.permission.VIBRATE' as any)
+      .then(ok => {
+        canVibrateRef.current = !!ok;
+      })
+      .catch(() => {
+        canVibrateRef.current = false;
+      });
+  }, []);
 
   // Open / close the global ring socket as auth state flips.
   useEffect(() => {
@@ -89,10 +113,12 @@ export const IncomingCallOverlay: React.FC = () => {
   //     yet (fresh build pending), it should not take down the JS thread.
   useEffect(() => {
     if (!incoming) return;
-    try {
-      Vibration.vibrate(RING_PATTERN, true);
-    } catch (e) {
-      console.warn('[ring] vibrate failed', e);
+    if (canVibrateRef.current) {
+      try {
+        Vibration.vibrate(RING_PATTERN, true);
+      } catch (e) {
+        console.warn('[ring] vibrate failed', e);
+      }
     }
     try {
       // _DEFAULT_ asks Android to play the user's chosen system ringtone.
