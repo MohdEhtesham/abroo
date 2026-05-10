@@ -88,6 +88,11 @@ export const VideoCallScreen: React.FC = () => {
   const isInitiatorRef = useRef(false);
   const localStreamRef = useRef<MediaStream | null>(null);
   const teardownRef = useRef<() => void>(() => {});
+  // ICE candidates that arrive before we've called setRemoteDescription
+  // can't be applied yet — pc.addIceCandidate will throw / silently drop
+  // them. Queue and flush after the remote SDP lands.
+  const pendingIceRef = useRef<any[]>([]);
+  const remoteDescSetRef = useRef(false);
 
   const teardown = useCallback(() => {
     try {
@@ -117,7 +122,12 @@ export const VideoCallScreen: React.FC = () => {
   teardownRef.current = teardown;
 
   const createPeerConnection = useCallback(() => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({
+      iceServers: ICE_SERVERS,
+      // @ts-ignore — modern WebRTC on RN supports Unified Plan; ensures
+      // 'track' events fire reliably across both peers.
+      sdpSemantics: 'unified-plan',
+    });
 
     // @ts-ignore — RN-WebRTC's typings don't fully align with the spec
     pc.addEventListener('icecandidate', (event: any) => {
@@ -144,11 +154,46 @@ export const VideoCallScreen: React.FC = () => {
     // @ts-ignore
     pc.addEventListener('connectionstatechange', () => {
       const cs = (pc as any).connectionState;
+      console.log('[webrtc] connectionState →', cs);
       if (cs === 'connected') setState('connected');
       if (cs === 'failed' || cs === 'closed') setState(prev => (prev === 'ended' ? prev : 'failed'));
     });
 
+    // ICE state is more granular than connectionState and surfaces NAT
+    // traversal failures (e.g. symmetric NAT requiring TURN) earlier.
+    // @ts-ignore
+    pc.addEventListener('iceconnectionstatechange', () => {
+      const ic = (pc as any).iceConnectionState;
+      console.log('[webrtc] iceConnectionState →', ic);
+      if (ic === 'connected' || ic === 'completed') setState('connected');
+      if (ic === 'failed' || ic === 'disconnected') {
+        setState(prev => (prev === 'ended' ? prev : 'failed'));
+      }
+    });
+
+    // @ts-ignore
+    pc.addEventListener('signalingstatechange', () => {
+      console.log('[webrtc] signalingState →', (pc as any).signalingState);
+    });
+
     return pc;
+  }, []);
+
+  // Apply queued ICE candidates — called once we've successfully set the
+  // remote description (post-offer for the answerer, post-answer for the
+  // offerer).
+  const flushPendingIce = useCallback(async () => {
+    const pc = pcRef.current;
+    if (!pc) return;
+    const queue = pendingIceRef.current;
+    pendingIceRef.current = [];
+    for (const candidate of queue) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.warn('[webrtc] queued addIceCandidate failed', e);
+      }
+    }
   }, []);
 
   const createOffer = useCallback(async () => {
@@ -156,7 +201,11 @@ export const VideoCallScreen: React.FC = () => {
     const peerId = peerSocketIdRef.current;
     if (!pc || !peerId) return;
     try {
-      const offer = await pc.createOffer({});
+      console.log('[webrtc] createOffer →', peerId);
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
       await pc.setLocalDescription(offer);
       socketRef.current?.emit('signal', {
         to: peerId,
@@ -175,23 +224,38 @@ export const VideoCallScreen: React.FC = () => {
       if (!pc) return;
       try {
         if (data.type === 'offer') {
+          // We must be the answerer. setRemoteDescription(offer) → create
+          // & set local answer → send back. Then drain any ICE candidates
+          // the offerer fired before we were ready to consume them.
+          console.log('[webrtc] ← offer, replying with answer');
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+          remoteDescSetRef.current = true;
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           socketRef.current?.emit('signal', {
             to: from,
             data: { type: 'answer', sdp: answer.sdp },
           });
+          await flushPendingIce();
         } else if (data.type === 'answer') {
+          console.log('[webrtc] ← answer');
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+          remoteDescSetRef.current = true;
+          await flushPendingIce();
         } else if (data.type === 'ice-candidate' && data.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          if (remoteDescSetRef.current) {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } else {
+            // Buffer until SDP exchange completes; many candidates arrive
+            // before the answer in a typical handshake.
+            pendingIceRef.current.push(data.candidate);
+          }
         }
       } catch (e) {
         console.warn('[webrtc] handleSignal failed', e);
       }
     },
-    [],
+    [flushPendingIce],
   );
 
   // Single bootstrap: permissions → media → socket → peer connection.
@@ -255,6 +319,7 @@ export const VideoCallScreen: React.FC = () => {
       setState('connecting');
 
       socket.on('connect', () => {
+        console.log('[socket] connected, joining visit room…', visitId);
         socket.emit('join', { visitId }, (ack: any) => {
           if (cancelled) return;
           if (!ack?.ok) {
@@ -263,31 +328,45 @@ export const VideoCallScreen: React.FC = () => {
             return;
           }
           if (Array.isArray(ack.peers) && ack.peers.length > 0) {
-            // Peer is already in the room → we initiate the offer.
+            // We are the SECOND joiner. The other peer is already there,
+            // so we drive the SDP exchange by sending the offer. The other
+            // side will set our offer as remoteDescription and reply with
+            // an answer.
+            console.log('[socket] joined, peer already present →', ack.peers[0]);
             peerSocketIdRef.current = ack.peers[0].socketId;
             isInitiatorRef.current = true;
             setState('connecting');
             createOffer();
           } else {
+            // We're the FIRST in the room. Wait for the other side to
+            // arrive — they will create the offer; we only respond.
+            console.log('[socket] joined first, waiting for peer…');
             setState('waiting-for-peer');
           }
         });
       });
 
       socket.on('peer-joined', ({ socketId }: { socketId: string }) => {
-        // The pre-existing peer always initiates so we don't both create
-        // simultaneous offers (glare). When this side was the only peer
-        // when joining, it becomes the initiator on peer-joined.
+        // The newcomer is the initiator; we (the first joiner) just
+        // record their socket id so our ICE candidates can be routed.
+        // Creating an offer here would cause GLARE — both sides ending
+        // up with local=offer and a corrupted SDP state machine. The
+        // call would forever read 'connecting' but never connect.
+        console.log('[socket] peer-joined →', socketId);
         peerSocketIdRef.current = socketId;
-        isInitiatorRef.current = true;
         setState('connecting');
-        createOffer();
       });
 
       socket.on('signal', handleSignal);
 
       socket.on('peer-left', () => {
+        console.log('[socket] peer-left');
         peerSocketIdRef.current = null;
+        // Reset SDP-exchange flags so a re-joining peer can renegotiate
+        // cleanly: we'll wait for their fresh offer rather than being
+        // confused by stale remote-description state.
+        remoteDescSetRef.current = false;
+        pendingIceRef.current = [];
         setRemoteStream(null);
         setState('waiting-for-peer');
       });
