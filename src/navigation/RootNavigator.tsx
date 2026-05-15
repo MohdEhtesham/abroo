@@ -16,6 +16,7 @@ import { BottomTabs } from './BottomTabs';
 import { ChatNavigator } from './ChatNavigator';
 import { InquiryNavigator } from './InquiryNavigator';
 import { NotificationsNavigator } from './NotificationsNavigator';
+import { ChatSocketBridge } from '../features/chat/components/ChatSocketBridge';
 import { IncomingCallOverlay } from '../features/visits/components/IncomingCallOverlay';
 import { VideoCallScreen } from '../features/visits/screens/VideoCallScreen';
 import type { AuthStackParamList, RootStackParamList } from './types';
@@ -101,6 +102,9 @@ export const RootNavigator: React.FC = () => {
       {/* App-wide ring listener — only renders an overlay when an
           incoming-call event arrives. */}
       {isAuthenticated && <IncomingCallOverlay />}
+      {/* Holds the chat socket open while the user is signed in so
+          messages push live regardless of which screen they're on. */}
+      {isAuthenticated && <ChatSocketBridge />}
     </NavigationContainer>
   );
 };

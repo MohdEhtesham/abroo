@@ -26,6 +26,7 @@ import {
 } from '../../../components';
 import { useIsMounted, useThrottledCallback } from '../../../hooks';
 import { useAppDispatch, useAppSelector } from '../../../store';
+import { openThreadThunk } from '../../../store/slices/chatSlice';
 import { toggleSaved } from '../../../store/slices/propertySlice';
 import { useTheme } from '../../../theme';
 import { SCREEN_WIDTH } from '../../../utils/dimensions';
@@ -97,9 +98,25 @@ export const PropertyDetailScreen: React.FC = () => {
       params: { propertyId: property.id },
     });
   });
-  const goChat = useThrottledCallback(() =>
-    navigation.navigate('ChatStack', { screen: 'Chat' }),
-  );
+  // Open the buyer↔seller chat for this listing. Find-or-create via the
+  // backend (idempotent), then deep-link into the conversation inside the
+  // Chats tab. We route through Main → ChatsTab so the bottom-tab tree
+  // owns the navigation state.
+  const goChat = useThrottledCallback(async () => {
+    if (!property?.id) return;
+    const action = await dispatch(openThreadThunk(property.id));
+    if (openThreadThunk.fulfilled.match(action)) {
+      navigation.navigate('Main' as never, {
+        screen: 'ChatsTab',
+        params: { screen: 'Chat', params: { threadId: action.payload.id } },
+      } as never);
+    } else {
+      Alert.alert(
+        'Could not open chat',
+        (action.payload as string | undefined) ?? 'Please try again.',
+      );
+    }
+  });
   const goSimilar = useThrottledCallback((sid: string) =>
     navigation.push('PropertyDetail', { id: sid }),
   );

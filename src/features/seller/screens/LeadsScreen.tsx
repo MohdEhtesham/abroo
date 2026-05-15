@@ -21,6 +21,7 @@ import {
   Text,
 } from '../../../components';
 import { useAppDispatch, useAppSelector } from '../../../store';
+import { openThreadThunk } from '../../../store/slices/chatSlice';
 import {
   loadLeadsThunk,
   setLeadStatusThunk,
@@ -231,6 +232,30 @@ export const LeadsScreen: React.FC = () => {
                     <Icon name="logo-whatsapp" size={14} color="#fff" />
                     <Text variant="caption" weight="700" style={{ color: '#fff', marginLeft: 5 }}>
                       WhatsApp
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={async () => {
+                      if (!item.listingId) return;
+                      // Lead carries consumerId (the buyer); seller-flow
+                      // openThread requires it explicitly.
+                      const buyerId = item.consumerId;
+                      if (!buyerId) return;
+                      const action = await dispatch(
+                        openThreadThunk({ listingId: item.listingId, buyerId }),
+                      );
+                      if (openThreadThunk.fulfilled.match(action)) {
+                        (navigation as any).navigate('ChatsTab', {
+                          screen: 'Chat',
+                          params: { threadId: action.payload.id },
+                        });
+                      }
+                    }}
+                    style={[styles.actionBtn, { backgroundColor: theme.colors.primary + '20' }]}
+                  >
+                    <Icon name="chatbubble-ellipses" size={14} color={theme.colors.primary} />
+                    <Text variant="caption" weight="700" style={{ color: theme.colors.primary, marginLeft: 5 }}>
+                      Message
                     </Text>
                   </Pressable>
                   {item.status !== 'closed_won' && item.status !== 'closed_lost' && (

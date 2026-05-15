@@ -39,6 +39,8 @@ export interface SellerLead {
   listingId: string;
   listingTitle: string;
   listingImage: string;
+  /** Buyer's user id — set by both real and synthesized leads. */
+  consumerId?: string;
   consumerName: string;
   consumerPhone: string;
   consumerEmail: string;

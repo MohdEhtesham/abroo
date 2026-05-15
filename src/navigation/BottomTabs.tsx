@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../components';
 import { useAppSelector } from '../store';
 import { useTheme } from '../theme';
+import { ChatNavigator } from './ChatNavigator';
 import { HomeNavigator } from './HomeNavigator';
 import { InquiryNavigator } from './InquiryNavigator';
 import { ProfileNavigator } from './ProfileNavigator';
@@ -31,7 +32,7 @@ interface TabDef {
 const CONSUMER_TABS: TabDef[] = [
   { key: 'HomeStack', label: 'Home', icon: 'home-outline', iconActive: 'home', component: HomeNavigator },
   { key: 'PropertyStack', label: 'Explore', icon: 'compass-outline', iconActive: 'compass', component: PropertyNavigator },
-  { key: 'InquiriesStack', label: 'Inquiries', icon: 'document-text-outline', iconActive: 'document-text', component: InquiryNavigator },
+  { key: 'ChatsTab', label: 'Chats', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', component: ChatNavigator },
   { key: 'VisitsStack', label: 'Visits', icon: 'calendar-outline', iconActive: 'calendar', component: VisitsNavigator },
   { key: 'ProfileStack', label: 'Profile', icon: 'person-outline', iconActive: 'person', component: ProfileNavigator },
 ];
@@ -40,7 +41,7 @@ const SELLER_TABS: TabDef[] = [
   { key: 'SellerHomeTab', label: 'Home', icon: 'home-outline', iconActive: 'home', component: SellerHomeNavigator },
   { key: 'ListingsTab', label: 'Listings', icon: 'business-outline', iconActive: 'business', component: SellerListingsNavigator },
   { key: 'LeadsTab', label: 'Leads', icon: 'people-outline', iconActive: 'people', component: SellerLeadsNavigator },
-  { key: 'AnalyticsTab', label: 'Stats', icon: 'bar-chart-outline', iconActive: 'bar-chart', component: SellerAnalyticsNavigator },
+  { key: 'ChatsTab', label: 'Chats', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', component: ChatNavigator },
   { key: 'ProfileStack', label: 'Profile', icon: 'person-outline', iconActive: 'person', component: ProfileNavigator },
 ];
 
@@ -55,6 +56,9 @@ const CustomTabBar: React.FC<BottomTabBarProps & { tabs: TabDef[] }> = ({
   const visitCount = useAppSelector(s => s.visit.list.filter(v => v.status === 'upcoming').length);
   const newLeads = useAppSelector(
     s => s.seller.leads.filter(l => l.status === 'new' || l.status === 'visit_booked').length,
+  );
+  const chatUnread = useAppSelector(s =>
+    s.chat.threads.reduce((sum, t) => sum + (t.unread ?? 0), 0),
   );
 
   return (
@@ -83,6 +87,7 @@ const CustomTabBar: React.FC<BottomTabBarProps & { tabs: TabDef[] }> = ({
         if (meta.key === 'InquiriesStack') badge = inquiryCount;
         else if (meta.key === 'VisitsStack') badge = visitCount;
         else if (meta.key === 'LeadsTab') badge = newLeads;
+        else if (meta.key === 'ChatsTab') badge = chatUnread;
 
         return (
           <Pressable key={route.key} onPress={onPress} style={styles.tab}>

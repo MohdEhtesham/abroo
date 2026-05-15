@@ -33,7 +33,8 @@ export type VisitsStackParamList = {
 };
 
 export type ChatStackParamList = {
-  Chat: undefined;
+  ChatThreads: undefined;
+  Chat: { threadId: string };
 };
 
 export type NotificationsStackParamList = {

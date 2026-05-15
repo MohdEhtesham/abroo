@@ -1,8 +1,9 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -11,87 +12,158 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { io, Socket } from 'socket.io-client';
+import { Avatar, Screen, Text } from '../../../components';
+import { API_BASE_URL } from '../../../config/env';
+import { useAppDispatch, useAppSelector } from '../../../store';
 import {
-  AnimatedHeader,
-  Avatar,
-  BottomSheet,
-  CustomTextInput,
-  GradientButton,
-  Screen,
-  Text,
-} from '../../../components';
+  addOptimisticMessage,
+  loadThreadThunk,
+  markReadThunk,
+  sendTextThunk,
+} from '../../../store/slices/chatSlice';
 import { useTheme } from '../../../theme';
 import { formatTime } from '../../../utils/format';
-import { chatService } from '../services/chatService';
-import type { AdvisorThread, ChatMessage } from '../types';
+import type { ChatMessage } from '../types';
+
+type ChatRouteParams = { Chat: { threadId: string } };
 
 export const ChatScreen: React.FC = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const [thread, setThread] = useState<AdvisorThread | null>(null);
+  const route = useRoute<RouteProp<ChatRouteParams, 'Chat'>>();
+  const dispatch = useAppDispatch();
+  const threadId = route.params?.threadId;
+
+  const thread = useAppSelector(s => s.chat.threads.find(t => t.id === threadId));
+  const messages = useAppSelector(s => s.chat.messagesByThread[threadId] ?? []);
+  const sending = useAppSelector(s => s.chat.sending);
+  const myUserId = useAppSelector(s => s.auth.user?.id ?? '');
+  const token = useAppSelector(s => s.auth.token);
+
   const [text, setText] = useState('');
-  const [callback, setCallback] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [time, setTime] = useState('Anytime');
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  // Per-screen socket connection so we can `join` this thread's room — the
+  // app-wide ChatSocketBridge handles the global push channel separately.
+  const socketRef = useRef<Socket | null>(null);
 
+  // Load the thread (metadata + a page of messages) and mark it read.
   useEffect(() => {
-    chatService.thread().then(setThread);
-    const t = setInterval(async () => {
-      const updated = await chatService.poll();
-      setThread({ ...updated });
-    }, 2000);
-    return () => clearInterval(t);
-  }, []);
+    if (!threadId) return;
+    dispatch(loadThreadThunk(threadId));
+    dispatch(markReadThunk(threadId));
+  }, [dispatch, threadId]);
 
-  const send = async () => {
-    if (!text.trim()) return;
+  // Join the thread's room so the server fans out new messages from the
+  // peer instantly. The app-wide bridge already wires socketMessageReceived
+  // into the slice, so we don't need an extra listener here.
+  useEffect(() => {
+    if (!threadId || !token) return;
+    const socket = io(`${API_BASE_URL}/chat`, {
+      transports: ['websocket', 'polling'],
+      auth: { token },
+      reconnection: true,
+      timeout: 15000,
+    });
+    socketRef.current = socket;
+    socket.emit('join', { threadId });
+
+    return () => {
+      try { socket.emit('leave', { threadId }); } catch {}
+      try { socket.disconnect(); } catch {}
+      socketRef.current = null;
+    };
+  }, [threadId, token]);
+
+  // Auto-scroll to the latest message whenever the list changes.
+  useEffect(() => {
+    if (!messages.length) return;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+  }, [messages.length]);
+
+  const send = useCallback(() => {
     const t = text.trim();
+    if (!t || !threadId) return;
     setText('');
-    await chatService.send(t);
-    const updated = await chatService.poll();
-    setThread({ ...updated });
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-  };
 
-  const submitCallback = async () => {
-    await chatService.requestCallback({ name, phone, preferredTime: time });
-    setCallback(false);
-    setName('');
-    setPhone('');
-  };
+    // Optimistic bubble — appears immediately, swaps to the real id when
+    // sendTextThunk.fulfilled lands.
+    const tempId = `tmp_${Date.now()}`;
+    const optimistic: ChatMessage = {
+      id: tempId,
+      threadId,
+      senderId: myUserId,
+      type: 'text',
+      text: t,
+      readBy: [],
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+    dispatch(addOptimisticMessage({ threadId, message: optimistic }));
+    dispatch(sendTextThunk({ threadId, text: t, tempId }));
+  }, [dispatch, myUserId, text, threadId]);
 
-  if (!thread) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <AnimatedHeader title="Chat" onBackPress={() => navigation.goBack()} />
-      </Screen>
-    );
-  }
+  const peer = thread?.peer ?? null;
+  const peerName = peer?.fullName ?? 'Conversation';
+
+  // Group messages by date so we can show a subtle date pill between days.
+  const dateLabel = useMemo(() => {
+    const labels: Record<string, string> = {};
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+    for (const m of messages) {
+      const d = new Date(m.createdAt).toDateString();
+      if (labels[d]) continue;
+      if (d === today) labels[d] = 'Today';
+      else if (d === yesterday) labels[d] = 'Yesterday';
+      else
+        labels[d] = new Date(m.createdAt).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+    }
+    return labels;
+  }, [messages]);
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.divider }]}>
-        <Pressable onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: theme.colors.divider }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.divider },
+        ]}
+      >
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={[styles.iconBtn, { backgroundColor: theme.colors.divider }]}
+        >
           <Icon name="chevron-back" size={22} color={theme.colors.text} />
         </Pressable>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 10 }}>
-          <View>
-            <Avatar name={thread.advisorName} size={42} />
-            {thread.online && <View style={[styles.onlineDot, { backgroundColor: theme.colors.success, borderColor: theme.colors.surface }]} />}
-          </View>
-          <View style={{ marginLeft: 10 }}>
-            <Text variant="bodyLg" weight="700">{thread.advisorName}</Text>
-            <Text variant="caption" style={{ color: thread.online ? theme.colors.success : theme.colors.textMuted }}>
-              {thread.online ? 'Online now' : 'Offline'}
+          <Avatar name={peerName} uri={peer?.avatar} size={40} />
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text variant="bodyLg" weight="700" numberOfLines={1}>
+              {peerName}
             </Text>
+            {!!thread?.listingTitle && (
+              <Text variant="caption" color="textMuted" numberOfLines={1}>
+                Re: {thread.listingTitle}
+              </Text>
+            )}
           </View>
         </View>
-        <Pressable style={[styles.iconBtn, { backgroundColor: theme.colors.divider }]} onPress={() => setCallback(true)}>
-          <Icon name="call-outline" size={20} color={theme.colors.text} />
-        </Pressable>
+        {peer?.phone ? (
+          <Pressable
+            style={[styles.iconBtn, { backgroundColor: theme.colors.divider }]}
+            onPress={() => Linking.openURL(`tel:${peer.phone}`)}
+          >
+            <Icon name="call-outline" size={20} color={theme.colors.text} />
+          </Pressable>
+        ) : null}
       </View>
 
       <KeyboardAvoidingView
@@ -101,97 +173,126 @@ export const ChatScreen: React.FC = () => {
       >
         <FlatList
           ref={listRef}
-          data={thread.messages}
+          data={messages}
           keyExtractor={m => m.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
-          renderItem={({ item }) => {
-            const mine = item.role === 'user';
+          contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 }}
+          renderItem={({ item, index }) => {
+            const mine = item.senderId === myUserId;
+            const prev = index > 0 ? messages[index - 1] : null;
+            const currentDay = new Date(item.createdAt).toDateString();
+            const showDate = !prev || new Date(prev.createdAt).toDateString() !== currentDay;
             return (
-              <View style={[styles.bubbleRow, mine ? { justifyContent: 'flex-end' } : null]}>
-                <View
-                  style={[
-                    styles.bubble,
-                    mine
-                      ? { backgroundColor: theme.colors.primary, borderBottomRightRadius: 4 }
-                      : { backgroundColor: theme.colors.surfaceElevated, borderBottomLeftRadius: 4 },
-                  ]}
-                >
-                  <Text style={{ color: mine ? '#fff' : theme.colors.text, fontSize: 15, lineHeight: 20 }}>
-                    {item.text}
-                  </Text>
-                  <Text
-                    variant="caption"
-                    style={{
-                      color: mine ? 'rgba(255,255,255,0.75)' : theme.colors.textMuted,
-                      marginTop: 4,
-                      alignSelf: 'flex-end',
-                    }}
+              <>
+                {showDate && (
+                  <View style={styles.dateRow}>
+                    <View
+                      style={[
+                        styles.datePill,
+                        { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+                      ]}
+                    >
+                      <Text variant="caption" weight="700" color="textMuted">
+                        {dateLabel[currentDay]}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                <View style={[styles.bubbleRow, mine ? { justifyContent: 'flex-end' } : null]}>
+                  <View
+                    style={[
+                      styles.bubble,
+                      mine
+                        ? { backgroundColor: theme.colors.primary, borderBottomRightRadius: 4 }
+                        : {
+                            backgroundColor: theme.colors.surfaceElevated,
+                            borderBottomLeftRadius: 4,
+                            borderColor: theme.colors.border,
+                            borderWidth: 1,
+                          },
+                    ]}
                   >
-                    {formatTime(item.timestamp)}
-                  </Text>
+                    <Text style={{ color: mine ? '#fff' : theme.colors.text, fontSize: 15, lineHeight: 20 }}>
+                      {item.text}
+                    </Text>
+                    <View style={styles.metaRow}>
+                      <Text
+                        variant="caption"
+                        style={{
+                          color: mine ? 'rgba(255,255,255,0.78)' : theme.colors.textMuted,
+                          fontSize: 10,
+                        }}
+                      >
+                        {formatTime(item.createdAt)}
+                      </Text>
+                      {mine && item.pending && (
+                        <Icon
+                          name="time-outline"
+                          size={11}
+                          color="rgba(255,255,255,0.78)"
+                          style={{ marginLeft: 4 }}
+                        />
+                      )}
+                      {mine && item.failed && (
+                        <Icon name="alert-circle" size={12} color="#fca5a5" style={{ marginLeft: 4 }} />
+                      )}
+                    </View>
+                  </View>
                 </View>
-              </View>
+              </>
             );
           }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Icon name="chatbubbles-outline" size={36} color={theme.colors.textMuted} />
+              <Text variant="bodySm" color="textMuted" align="center" style={{ marginTop: 10 }}>
+                Say hello to {peerName.split(' ')[0]} — your messages stay private to this listing.
+              </Text>
+            </View>
+          }
         />
-        <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.divider }]}>
-          <View style={[styles.inputWrap, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+
+        <View
+          style={[
+            styles.inputBar,
+            { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.divider },
+          ]}
+        >
+          <View
+            style={[
+              styles.inputWrap,
+              { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+            ]}
+          >
             <TextInput
               value={text}
               onChangeText={setText}
               placeholder="Write a message…"
               placeholderTextColor={theme.colors.textMuted}
               multiline
-              style={{ flex: 1, color: theme.colors.text, fontSize: 15, paddingVertical: 0, maxHeight: 100 }}
+              style={{
+                flex: 1,
+                color: theme.colors.text,
+                fontSize: 15,
+                paddingVertical: 0,
+                maxHeight: 100,
+              }}
             />
           </View>
-          <Pressable onPress={send} style={[styles.sendBtn, { backgroundColor: theme.colors.primary }]}>
+          <Pressable
+            onPress={send}
+            disabled={!text.trim() || sending}
+            style={[
+              styles.sendBtn,
+              {
+                backgroundColor: text.trim() ? theme.colors.primary : theme.colors.divider,
+                opacity: text.trim() ? 1 : 0.7,
+              },
+            ]}
+          >
             <Icon name="send" size={18} color="#fff" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-
-      <BottomSheet visible={callback} onClose={() => setCallback(false)} title="Request a callback">
-        <Text variant="bodySm" color="textSecondary" style={{ marginBottom: 16 }}>
-          Our advisor will call you back at your preferred time.
-        </Text>
-        <CustomTextInput label="Your name" value={name} onChangeText={setName} leftIcon="person-outline" />
-        <CustomTextInput
-          label="Phone"
-          value={phone}
-          onChangeText={setPhone}
-          leftIcon="call-outline"
-          keyboardType="number-pad"
-          maxLength={10}
-        />
-        <Text variant="bodySm" weight="600" color="textSecondary" style={{ marginTop: 4, marginBottom: 8 }}>
-          Preferred time
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {['Anytime', 'Morning', 'Afternoon', 'Evening'].map(t => {
-            const active = time === t;
-            return (
-              <Pressable
-                key={t}
-                onPress={() => setTime(t)}
-                style={[
-                  styles.timeChip,
-                  {
-                    backgroundColor: active ? theme.colors.primary : theme.colors.surfaceElevated,
-                    borderColor: active ? theme.colors.primary : theme.colors.border,
-                  },
-                ]}
-              >
-                <Text variant="bodySm" weight="600" style={{ color: active ? '#fff' : theme.colors.text }}>
-                  {t}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <GradientButton title="Request Callback" onPress={submitCallback} size="lg" />
-      </BottomSheet>
     </Screen>
   );
 };
@@ -200,7 +301,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -211,54 +312,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-  },
   bubbleRow: {
     flexDirection: 'row',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   bubble: {
-    maxWidth: '78%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
+    maxWidth: '80%',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginTop: 3,
+  },
+  dateRow: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  datePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 10,
+    gap: 8,
   },
   inputWrap: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 42,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: 21,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timeChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
+  empty: {
+    paddingTop: 60,
+    paddingHorizontal: 30,
+    alignItems: 'center',
   },
 });

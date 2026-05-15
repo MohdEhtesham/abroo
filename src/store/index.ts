@@ -1,6 +1,7 @@
 import { Action, combineReducers, configureStore, Middleware, Reducer } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import authReducer from './slices/authSlice';
+import chatReducer from './slices/chatSlice';
 import propertyReducer from './slices/propertySlice';
 import inquiryReducer from './slices/inquirySlice';
 import visitReducer from './slices/visitSlice';
@@ -9,6 +10,7 @@ import sellerReducer from './slices/sellerSlice';
 
 const appReducer = combineReducers({
   auth: authReducer,
+  chat: chatReducer,
   property: propertyReducer,
   inquiry: inquiryReducer,
   visit: visitReducer,
