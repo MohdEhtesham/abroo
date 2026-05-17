@@ -25,6 +25,7 @@ import { useTheme } from '../../../theme';
 import {
   VOICE_PRESETS,
   VoicePreset,
+  VoicePresetCategory,
   cacheInputFile,
   convertVoice,
 } from '../services/voiceLabService';
@@ -47,7 +48,12 @@ export const VoiceLabScreen: React.FC = () => {
   const [output, setOutput] = useState<string | null>(null);
   const [activePreset, setActivePreset] = useState<VoicePreset | null>(null);
   const [playing, setPlaying] = useState<'none' | 'input' | 'output'>('none');
+  // Default to Studio — that's the YouTube-ready use case. Effects tucked
+  // behind a tap so the legitimate workflow leads the UX.
+  const [category, setCategory] = useState<VoicePresetCategory>('studio');
   const soundRef = useRef<Sound | null>(null);
+
+  const visiblePresets = VOICE_PRESETS.filter(p => p.category === category);
 
   // Clean up any active sound on unmount.
   useEffect(() => {
@@ -210,11 +216,52 @@ export const VoiceLabScreen: React.FC = () => {
         {/* Presets */}
         {picked && (
           <>
-            <Text variant="caption" weight="700" color="textMuted" style={[styles.label, { marginTop: 18 }]}>
-              CHOOSE EFFECT
+            <View style={[styles.tabRow, { marginTop: 18 }]}>
+              {(
+                [
+                  { id: 'studio' as const, label: 'Studio', subtitle: 'YouTube-ready masters' },
+                  { id: 'effect' as const, label: 'Effects', subtitle: 'Fun voice transforms' },
+                ]
+              ).map(t => {
+                const active = category === t.id;
+                return (
+                  <Pressable
+                    key={t.id}
+                    onPress={() => setCategory(t.id)}
+                    style={[
+                      styles.tabBtn,
+                      {
+                        backgroundColor: active ? theme.colors.primary : theme.colors.surfaceElevated,
+                        borderColor: active ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      weight="800"
+                      style={{ color: active ? '#fff' : theme.colors.text, fontSize: 14 }}
+                    >
+                      {t.label}
+                    </Text>
+                    <Text
+                      variant="caption"
+                      style={{
+                        color: active ? 'rgba(255,255,255,0.85)' : theme.colors.textMuted,
+                        marginTop: 1,
+                        fontSize: 11,
+                      }}
+                    >
+                      {t.subtitle}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text variant="caption" weight="700" color="textMuted" style={[styles.label, { marginTop: 14 }]}>
+              {category === 'studio' ? 'CHOOSE STUDIO PRESET' : 'CHOOSE EFFECT'}
             </Text>
             <FlatList
-              data={VOICE_PRESETS}
+              data={visiblePresets}
               keyExtractor={p => p.id}
               numColumns={3}
               scrollEnabled={false}
@@ -366,5 +413,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
   },
 });
