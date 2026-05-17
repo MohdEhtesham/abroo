@@ -48,6 +48,7 @@ export type ProfileStackParamList = {
   Preferences: undefined;
   HelpSupport: undefined;
   Settings: undefined;
+  VoiceLab: undefined;
 };
 
 export type RootTabParamList = {

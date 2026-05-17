@@ -8,6 +8,7 @@ import {
   SavedPropertiesScreen,
   SettingsScreen,
 } from '../features/profile/screens';
+import { VoiceLabScreen } from '../features/voiceLab/screens/VoiceLabScreen';
 import type { ProfileStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -20,5 +21,6 @@ export const ProfileNavigator: React.FC = () => (
     <Stack.Screen name="Preferences" component={PreferencesScreen} />
     <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="VoiceLab" component={VoiceLabScreen} />
   </Stack.Navigator>
 );

@@ -6,6 +6,9 @@ buildscript {
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
+        // Use the audio-only ffmpeg-kit build (mp3lame + audio filters
+        // only) — drops ~30 MB from the APK vs the 'https' default.
+        ffmpegKitPackage = "audio"
     }
     repositories {
         google()

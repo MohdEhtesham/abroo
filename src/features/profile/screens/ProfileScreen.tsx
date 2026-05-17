@@ -88,6 +88,12 @@ export const ProfileScreen: React.FC = () => {
       items: isSeller ? sellerAccountItems : consumerAccountItems,
     },
     {
+      title: 'Tools',
+      items: [
+        { id: 'voiceLab', label: 'Voice Lab', icon: 'mic-outline', route: 'VoiceLab' },
+      ],
+    },
+    {
       title: 'App',
       items: [
         { id: 'settings', label: 'Settings', icon: 'settings-outline', route: 'Settings' },
